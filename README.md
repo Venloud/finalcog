@@ -8,10 +8,10 @@ This repository contains the Final Cog landing page, a TikTok-first batch video 
 
 - Original landing page, responsive layout
 - Every decorative cog follows one absolute scroll angle, including the wordmark O, menu, footer and dialog; scroll backward to reverse rotation
-- TikTok-branded cyan accent, optional YouTube/Instagram previews clearly marked *coming soon*
+- TikTok-only publishing destination preview with branded cyan accent
 - Workflow overview and roadmap FAQ
 - Local batch studio, schedule/history, platform preferences, and an honest analytics placeholder
-- TikTok, Instagram, YouTube and Twitch destination previews
+- TikTok destination preview
 - Functional early-access email draft link (no email account, mailing list, or fake login)
 - Site-specific prelaunch Terms and Privacy pages
 
@@ -34,7 +34,7 @@ The horror video generator remains a separate repository, `Venloud/horror-shorts
 3. Media storage with safe upload validation, draft editing, captions and batching
 4. Buffer-inspired weekly auto scheduling, queue state, timezone handling, pause/reorder
 5. Durable publisher worker, consent checks, reliable delivery statuses and dedupe
-6. TikTok audit and a confirmed real end-to-end publish, then YouTube and Instagram
+6. TikTok audit and a confirmed real end-to-end publish
 
 
 ## October 23 implementation update

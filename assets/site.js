@@ -12,10 +12,7 @@
   const emailField = document.querySelector('#signupEmail');
   const form = document.querySelector('#earlyAccessForm');
   const settings = {
-    tiktok: {color: '#25f4ee', soft: 'rgba(37,244,238,.13)', note: 'TikTok is our first publishing destination. The platform is in development.'},
-    youtube: {color: '#ff4545', soft: 'rgba(255,69,69,.13)', note: 'YouTube Shorts is planned after TikTok. This integration is not available yet.'},
-    twitch: {color: '#b59be5', soft: 'rgba(181,155,229,.12)', note: 'Twitch is a destination preview only. Publishing is not connected.'},
-    instagram: {color: '#dc69e7', soft: 'rgba(220,105,231,.12)', note: 'Instagram Reels is on the roadmap. This integration is not available yet.'}
+    tiktok: {color: '#25f4ee', soft: 'rgba(37,244,238,.13)', note: 'TikTok is our first publishing destination. The platform is in development.'}
   };
   const setPlatform = (name) => {
     const selected = settings[name];
@@ -32,7 +29,10 @@
     }
   };
   platformButtons.forEach(button => button.addEventListener('click', () => setPlatform(button.dataset.platformSelect)));
-  try { setPlatform(localStorage.getItem('finalcog.platform') || 'tiktok'); } catch {}
+  try {
+    const rememberedPlatform = localStorage.getItem('finalcog.platform');
+    setPlatform(settings[rememberedPlatform] ? rememberedPlatform : 'tiktok');
+  } catch { setPlatform('tiktok'); }
   const closeMenu = () => { menu.hidden = true; menuButton.setAttribute('aria-expanded','false'); };
   menuButton.addEventListener('click', () => {
     const willOpen = menu.hidden;
@@ -54,11 +54,11 @@
     const isSettings = button.dataset.utility === 'settings';
     document.querySelector('#workspaceTitle').textContent = isSettings ? 'Your workspace.' : 'Your momentum.';
     document.querySelector('#workspaceBody').innerHTML = isSettings
-      ? '<p class="form-note">Choose your default destination. It is remembered in this browser and used for new videos in the demo studio.</p><label for="defaultPlatform">Default platform</label><select id="defaultPlatform"><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="twitch">Twitch</option></select><p class="form-note">Accounts and live integrations are not connected.</p>'
+       ? '<p class="form-note">TikTok is the only destination in this demo workspace.</p><label for="defaultPlatform">Default platform</label><select id="defaultPlatform"><option value="tiktok">TikTok</option></select><p class="form-note">Accounts and live integrations are not connected.</p>'
       : '<p class="form-note">Live analytics will be available after platform integrations launch. You can review your saved demo drafts and schedules now.</p><a class="button button-outline" href="studio.html#publishing">View demo history ↗</a>';
     if (isSettings) {
       const select = document.querySelector('#defaultPlatform');
-      select.value = body.dataset.platform;
+       select.value = 'tiktok';
       select.addEventListener('change', () => setPlatform(select.value));
     }
     workspaceDialog.showModal();

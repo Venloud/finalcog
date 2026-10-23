@@ -16,7 +16,8 @@ const publicDirectories = new Set(['assets', 'kindlediron', 'snapchat']);
 
 createServer(async (request, response) => {
   try {
-    const pathname = decodeURIComponent(new URL(request.url, 'http://preview').pathname);
+    const requestPath = decodeURIComponent(new URL(request.url, 'http://preview').pathname);
+    const pathname = requestPath === '/favicon.ico' ? '/assets/favicon.svg' : requestPath;
     const segments = pathname.split('/').filter(Boolean);
     if (segments.some(segment => segment.startsWith('.')) ||
         (segments.length > 1 && !publicDirectories.has(segments[0]))) {
