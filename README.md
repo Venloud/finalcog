@@ -7,13 +7,15 @@ This repository contains the Final Cog landing page, a TikTok-first batch video 
 ## Current deliverable
 
 - Original landing page, responsive layout
-- Scroll-responsive left mechanical cog and working gear navigation
+- Every decorative cog follows one absolute scroll angle, including the wordmark O, menu, footer and dialog; scroll backward to reverse rotation
 - TikTok-branded cyan accent, optional YouTube/Instagram previews clearly marked *coming soon*
 - Workflow overview and roadmap FAQ
+- Local batch studio, schedule/history, platform preferences, and an honest analytics placeholder
+- TikTok, Instagram, YouTube and Twitch destination previews
 - Functional early-access email draft link (no email account, mailing list, or fake login)
 - Site-specific prelaunch Terms and Privacy pages
 
-The page **does not** upload, connect TikTok accounts, schedule, automatically post, or store emails yet. No login or early-access subscription backend exists. Do not claim otherwise.
+The demo studio supports multiple local video previews, captions, batch drafts, and spaced demo schedules. It stores metadata in this browser only; video previews last for the current session. It does not upload video bytes, connect social accounts, automatically publish, or store email addresses. No login backend exists.
 
 ## Preview
 
@@ -33,3 +35,10 @@ The horror video generator remains a separate repository, `Venloud/horror-shorts
 4. Buffer-inspired weekly auto scheduling, queue state, timezone handling, pause/reorder
 5. Durable publisher worker, consent checks, reliable delivery statuses and dedupe
 6. TikTok audit and a confirmed real end-to-end publish, then YouTube and Instagram
+
+
+## October 23 implementation update
+
+Preserved the existing blueprint landing design and added the earlier homepage workspace controls. `index.html`, `assets/site.css` and `assets/site.js` provide the entry points, platform selection, settings and demo analytics panel. `studio.html`, `assets/studio.css` and `assets/batch.js` reuse the batch demo workspace. `assets/motion.js` maps scrollY to the shared `--scroll-angle` CSS variable at 0.12 degrees per pixel, without a cap or idle rotation. Reduced motion disables decorative rotation. Preview privacy now describes local metadata storage.
+
+Validation: JavaScript syntax and motion behavior checks passed, including backward scrolling, restored positions, negative overscroll, frame batching and reduced motion. The existing batch logic checks cover file selection, captions, scheduling intervals, storage errors and legacy history. This revision has not received a browser visual check. No new workflow, external service or secret is required. Real authentication and publishing remain future work.

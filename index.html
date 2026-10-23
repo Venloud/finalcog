@@ -11,6 +11,7 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
+  <script src="assets/motion.js" defer></script>
 </head>
 <body data-platform="tiktok">
   <a href="#main" class="skip-link">Skip to content</a>
@@ -76,6 +77,7 @@
             <a href="#how">How it works</a>
             <a href="#platforms">Platforms</a>
             <a href="#questions">Questions</a>
+            <a href="studio.html">Upload studio</a><a href="studio.html#publishing">Schedule &amp; history</a>
           </nav>
         </div>
         <a href="#home" class="brand"><span class="brand-icon"><svg viewBox="0 0 700 700" aria-hidden="true" focusable="false"><path d="M 285.6 87.8 L 298.4 24.1 L 401.6 24.1 L 414.4 87.8 L 425.3 90.7 L 468.3 41.9 L 557.7 93.5 L 536.9 155.1 L 544.9 163.1 L 606.5 142.3 L 658.1 231.7 L 609.3 274.7 L 612.2 285.6 L 675.9 298.4 L 675.9 401.6 L 612.2 414.4 L 609.3 425.3 L 658.1 468.3 L 606.5 557.7 L 544.9 536.9 L 536.9 544.9 L 557.7 606.5 L 468.3 658.1 L 425.3 609.3 L 414.4 612.2 L 401.6 675.9 L 298.4 675.9 L 285.6 612.2 L 274.7 609.3 L 231.7 658.1 L 142.3 606.5 L 163.1 544.9 L 155.1 536.9 L 93.5 557.7 L 41.9 468.3 L 90.7 425.3 L 87.8 414.4 L 24.1 401.6 L 24.1 298.4 L 87.8 285.6 L 90.7 274.7 L 41.9 231.7 L 93.5 142.3 L 155.1 163.1 L 163.1 155.1 L 142.3 93.5 L 231.7 41.9 L 274.7 90.7 Z" fill="none" stroke="currentColor" stroke-width="13" stroke-linejoin="round"/><circle cx="350" cy="350" r="215" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="350" cy="350" r="163" fill="none" stroke="currentColor" stroke-width="12"/><circle cx="350" cy="350" r="97" fill="none" stroke="currentColor" stroke-width="12"/></svg></span><span>Final<span class="brand-bold">Cog</span></span><span class="brand-dot">.</span></a>
@@ -87,6 +89,7 @@
           <button class="button button-sm" type="button" data-open-auth="join">Get started <span aria-hidden="true">↗</span></button>
         </div>
       </div>
+      <nav class="workspace-nav" aria-label="Creator workspace"><a href="#home">Home</a><a href="studio.html#publishing">Schedule</a><button type="button" data-utility="analytics">Analytics</button><a href="studio.html">Library &amp; uploads</a><button type="button" data-utility="settings">Settings</button><a class="studio-link" href="studio.html">Open demo studio ↗</a></nav>
     </header>
 
     <main id="main">
@@ -105,6 +108,7 @@
               <button class="platform active" type="button" data-platform-select="tiktok" aria-pressed="true"><span class="tiktok-logo" aria-hidden="true">♪</span><span>TikTok</span><span class="state-dot"></span></button>
               <button class="platform" type="button" data-platform-select="youtube" aria-pressed="false"><span class="youtube-logo" aria-hidden="true">▶</span><span>YouTube</span><span class="platform-soon">Soon</span></button>
               <button class="platform" type="button" data-platform-select="instagram" aria-pressed="false"><span class="instagram-logo" aria-hidden="true">◎</span><span>Instagram</span><span class="platform-soon">Soon</span></button>
+              <button class="platform" type="button" data-platform-select="twitch" aria-pressed="false"><span aria-hidden="true">▣</span><span>Twitch</span><span class="platform-soon">Soon</span></button>
             </div>
             <p class="platform-note" id="platformNote" role="status">TikTok is our first publishing destination. The platform is in development.</p>
           </div>
@@ -166,6 +170,8 @@
       <span class="dialog-eyebrow" id="dialogEyebrow">EARLY ACCESS</span>
       <h2 id="dialogTitle">Your content deserves momentum.</h2>
       <p id="dialogIntro">The publishing app is being built. The website is live, but email accounts and automatic publishing are not active yet.</p>
+      <a class="button button-primary demo-entry" href="studio.html">Try the demo studio ↗</a>
+      <p class="form-note">Batch uploads, captions and schedules are browser demos. No account is needed and nothing is published.</p>
       <form id="earlyAccessForm">
         <label for="signupEmail">Your email address</label>
         <input id="signupEmail" type="email" inputmode="email" name="email" autocomplete="email" placeholder="you@example.com" required>
@@ -174,5 +180,6 @@
       </form>
     </div>
   </dialog>
+<dialog id="workspaceDialog" class="auth-dialog" aria-labelledby="workspaceTitle"><div class="dialog-top"><span>FINAL COG / WORKSPACE</span><button type="button" class="dialog-close" id="closeWorkspace" aria-label="Close workspace panel">×</button></div><div class="dialog-body"><h2 id="workspaceTitle"></h2><div id="workspaceBody"></div></div></dialog>
 </body>
 </html>

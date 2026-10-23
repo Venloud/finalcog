@@ -14,12 +14,14 @@
   const settings = {
     tiktok: {color: '#25f4ee', soft: 'rgba(37,244,238,.13)', note: 'TikTok is our first publishing destination. The platform is in development.'},
     youtube: {color: '#ff4545', soft: 'rgba(255,69,69,.13)', note: 'YouTube Shorts is planned after TikTok. This integration is not available yet.'},
+    twitch: {color: '#b59be5', soft: 'rgba(181,155,229,.12)', note: 'Twitch is a destination preview only. Publishing is not connected.'},
     instagram: {color: '#dc69e7', soft: 'rgba(220,105,231,.12)', note: 'Instagram Reels is on the roadmap. This integration is not available yet.'}
   };
   const setPlatform = (name) => {
     const selected = settings[name];
     if (!selected) return;
     body.dataset.platform = name;
+    try { localStorage.setItem("finalcog.platform", name); } catch {}
     root.style.setProperty('--accent',selected.color);
     root.style.setProperty('--accent-soft',selected.soft);
     platformNote.textContent = selected.note;
@@ -30,6 +32,7 @@
     }
   };
   platformButtons.forEach(button => button.addEventListener('click', () => setPlatform(button.dataset.platformSelect)));
+  try { setPlatform(localStorage.getItem('finalcog.platform') || 'tiktok'); } catch {}
   const closeMenu = () => { menu.hidden = true; menuButton.setAttribute('aria-expanded','false'); };
   menuButton.addEventListener('click', () => {
     const willOpen = menu.hidden;
@@ -44,6 +47,25 @@
     email:['EMAIL ACCESS','An inbox for your next big idea.','Email login is not available yet. You can request an invite below, which opens your own email app.'],
     login:['ACCOUNT LOGIN','The machines are warming up.','We have not opened creator accounts yet. There is no live login service on this preview. You can request early access below.']
   };
+  const workspaceDialog = document.querySelector('#workspaceDialog');
+  let workspaceFocus;
+  document.querySelectorAll('[data-utility]').forEach(button => button.addEventListener('click', () => {
+    workspaceFocus = button;
+    const isSettings = button.dataset.utility === 'settings';
+    document.querySelector('#workspaceTitle').textContent = isSettings ? 'Your workspace.' : 'Your momentum.';
+    document.querySelector('#workspaceBody').innerHTML = isSettings
+      ? '<p class="form-note">Choose your default destination. It is remembered in this browser and used for new videos in the demo studio.</p><label for="defaultPlatform">Default platform</label><select id="defaultPlatform"><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="twitch">Twitch</option></select><p class="form-note">Accounts and live integrations are not connected.</p>'
+      : '<p class="form-note">Live analytics will be available after platform integrations launch. You can review your saved demo drafts and schedules now.</p><a class="button button-outline" href="studio.html#publishing">View demo history ↗</a>';
+    if (isSettings) {
+      const select = document.querySelector('#defaultPlatform');
+      select.value = body.dataset.platform;
+      select.addEventListener('change', () => setPlatform(select.value));
+    }
+    workspaceDialog.showModal();
+  }));
+  document.querySelector('#closeWorkspace').addEventListener('click', () => workspaceDialog.close());
+  workspaceDialog.addEventListener('close', () => workspaceFocus?.focus());
+  workspaceDialog.addEventListener('click', event => { if (event.target === workspaceDialog) workspaceDialog.close(); });
   let returnFocus = null;
   const openDialog = (mode) => {
     const [eyebrow,title,intro]=modes[mode] || modes.join;
@@ -67,17 +89,4 @@
     window.location.href='mailto:van02.vlcb@gmail.com?subject='+subject+'&body='+message;
   });
   document.querySelector('#year').textContent=String(new Date().getFullYear());
-  const cog = document.querySelector('#machineCog');
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let pending=false;
-  const updateCog = () => {
-    pending=false;
-    if(reducedMotion.matches){cog.style.transform='rotate(0deg)';return;}
-    const rotation=Math.min(window.scrollY * .075,260);
-    cog.style.transform='rotate('+rotation+'deg)';
-  };
-  const requestScroll = () => { if(!pending){pending=true;requestAnimationFrame(updateCog)} };
-  window.addEventListener('scroll',requestScroll,{passive:true});
-  reducedMotion.addEventListener?.('change',requestScroll);
-  requestScroll();
 })();
