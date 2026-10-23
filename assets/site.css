@@ -37,13 +37,14 @@ html{scroll-padding-top:95px}body{margin:0;background:#0b0d0f;color:var(--ink);f
 @media(prefers-reduced-motion:reduce){:root{scroll-behavior:auto}*,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important}.machine-cog{will-change:auto}}
 
 
-/* One angle, driven directly by page scroll, shared by every cog. */
-:root{--scroll-angle:0deg}
-.machine-cog svg,.nav-gear svg,.brand-icon svg,.type-cog svg,.tiny-cog svg,.dialog-mark svg,.studio-cog{transform:rotate(var(--scroll-angle));transform-origin:50% 50%;transform-box:view-box;transition:none;animation:none}
+/* Shared scroll angles; secondary cogs use the opposite direction. */
+:root{--scroll-angle:0deg;--scroll-angle-opposite:0deg}
+.machine-cog svg,.nav-gear svg,.brand-icon svg,.type-cog svg,.tiny-cog svg,.dialog-mark svg{transform:none;transform-origin:50% 50%;transform-box:view-box;transition:none;animation:none;background:radial-gradient(circle at 50% 7%,var(--accent) 0 2px,transparent 2.7px)}
 .machine-cog{will-change:auto}
 .workspace-nav{max-width:1280px;margin:auto;padding:14px 24px;display:flex;align-items:center;justify-content:center;gap:26px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
 .workspace-nav button{border:0;background:none;color:inherit;font:inherit;padding:0}.workspace-nav a:hover,.workspace-nav button:hover{color:var(--accent)}.workspace-nav .studio-link{color:var(--ink);margin-left:20px}.demo-entry{margin-top:18px}.dialog-body select{width:100%;padding:12px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px}
 .button-primary{background:#eee;color:#101213;border-color:#eee;box-shadow:none}
 @media(max-width:680px){.workspace-nav{gap:17px;flex-wrap:wrap;font-size:11px;padding:12px 18px}.workspace-nav .studio-link{margin-left:0}.platform-list{max-width:350px;margin-inline:auto}.platform{flex-basis:44%}}
 .header-inner>.brand .brand-icon{display:none}
-.machine-cog svg,.nav-gear svg,.brand-icon svg,.type-cog svg,.tiny-cog svg,.dialog-mark svg{transform:none;rotate:var(--scroll-angle);transform-origin:50% 50%;transform-box:view-box}
+.machine-cog svg{transform:rotate(var(--scroll-angle))}
+.nav-gear svg,.brand-icon svg,.type-cog svg,.tiny-cog svg,.dialog-mark svg{transform:rotate(var(--scroll-angle-opposite))}

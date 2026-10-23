@@ -1,19 +1,23 @@
 (() => {
   const root = document.documentElement;
   const degreesPerPixel = 0.12;
-  let frame = null;
+  let framePending = false;
+
   function updateRotation() {
-    frame = null;
-    // Absolute position makes reversing, anchor jumps and restored scroll deterministic.
-    const scrollPosition = window.scrollY;
-    const rotation = scrollPosition * degreesPerPixel;
+    framePending = false;
+    const rotation = window.scrollY * degreesPerPixel;
     root.style.setProperty('--scroll-angle', `${rotation}deg`);
+    root.style.setProperty('--scroll-angle-opposite', `${rotation * -1}deg`);
   }
-  function requestRotation() {
-    if (frame === null) frame = requestAnimationFrame(updateRotation);
+
+  function scheduleRotation() {
+    if (framePending) return;
+    framePending = true;
+    requestAnimationFrame(updateRotation);
   }
-  window.addEventListener('scroll', requestRotation, { passive: true });
-  window.addEventListener('pageshow', requestRotation);
-  window.addEventListener('resize', requestRotation);
+
+  window.addEventListener('scroll', scheduleRotation, { passive: true });
+  window.addEventListener('pageshow', scheduleRotation);
+  window.addEventListener('resize', scheduleRotation);
   updateRotation();
 })();

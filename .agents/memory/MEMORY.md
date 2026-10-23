@@ -1,0 +1,1 @@
+- [Scroll-driven cog motion](scroll-driven-cog-motion.md) — coalesce scroll-driven rotation to one animation-frame update, with counter-rotation and visible gear markers.
