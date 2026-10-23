@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "xTazPVCSNIt5iZxxIQVR5"
+uri = "file://generated-artifacts/final-cog-site-backup.zip"
+type = "unspecified"
+title = "Final Cog site backup"
+description = "ZIP backup of the current site source and Replit run instructions. Verified archive integrity; excludes Git history and agent-only workspace files."
+logical_id = "78c6cdda-b6df-462e-9de7-330455967dbd"
+content_hash = "sha256:672a72b0f6cdf5fb9d2baf32c79f0134e10a3146a01c79cf044797a9f0928261"
+size = 95922
+mtime_ms = 1792781741237
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:ff9e3f7f-c385-40b4-b9f6-482952f351e1/78c6cdda-b6df-462e-9de7-330455967dbd/a8ec4d5f-e356-4847-8363-fb78864dab07"
+storage_version_token = "1792781746151829"
+content_type = "application/octet-stream"
