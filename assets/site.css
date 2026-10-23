@@ -45,3 +45,5 @@ html{scroll-padding-top:95px}body{margin:0;background:#0b0d0f;color:var(--ink);f
 .workspace-nav button{border:0;background:none;color:inherit;font:inherit;padding:0}.workspace-nav a:hover,.workspace-nav button:hover{color:var(--accent)}.workspace-nav .studio-link{color:var(--ink);margin-left:20px}.demo-entry{margin-top:18px}.dialog-body select{width:100%;padding:12px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px}
 .button-primary{background:#eee;color:#101213;border-color:#eee;box-shadow:none}
 @media(max-width:680px){.workspace-nav{gap:17px;flex-wrap:wrap;font-size:11px;padding:12px 18px}.workspace-nav .studio-link{margin-left:0}.platform-list{max-width:350px;margin-inline:auto}.platform{flex-basis:44%}}
+.header-inner>.brand .brand-icon{display:none}
+.machine-cog svg,.nav-gear svg,.brand-icon svg,.type-cog svg,.tiny-cog svg,.dialog-mark svg{transform:none;rotate:var(--scroll-angle);transform-origin:50% 50%;transform-box:view-box}

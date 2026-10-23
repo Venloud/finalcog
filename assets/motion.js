@@ -6,7 +6,7 @@
   function updateRotation() {
     frame = null;
     // Absolute position makes reversing, anchor jumps and restored scroll deterministic.
-    const scrollPosition = Math.max(0, window.scrollY);
+    const scrollPosition = window.scrollY;
     const rotation = reducedMotion.matches ? 0 : scrollPosition * degreesPerPixel;
     root.style.setProperty('--scroll-angle', `${rotation}deg`);
   }
