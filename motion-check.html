@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Temporary cog scroll check</title>
+<pre id="results">Running scroll checks…</pre>
+<script>
+const selectors = {
+  '/index.html': ['.machine-cog svg', '.nav-gear svg', '.type-cog svg', '.brand-icon svg', '.tiny-cog svg', '.dialog-mark svg'],
+  '/studio.html': ['.studio-machine svg', '.studio-cog'],
+};
+const results = document.querySelector('#results');
+async function checkPage(path, cogSelectors) {
+  const frame = document.createElement('iframe');
+  const loaded = new Promise(resolve => frame.addEventListener('load', resolve, { once: true }));
+  frame.src = path;
+  document.body.append(frame);
+  await loaded;
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  doc.documentElement.style.scrollBehavior = 'auto';
+  const measurements = [];
+  for (const requestedY of [300, 800, 450]) {
+    win.scrollTo(0, requestedY);
+    await new Promise(resolve => win.setTimeout(resolve, 80));
+    const scrollY = win.scrollY;
+    const expected = scrollY * 0.12;
+    const rootAngle = parseFloat(win.getComputedStyle(doc.documentElement).getPropertyValue('--scroll-angle'));
+    const gears = cogSelectors.flatMap(selector => [...doc.querySelectorAll(selector)]);
+    const angles = gears.map(gear => parseFloat(win.getComputedStyle(gear).rotate));
+    measurements.push({ requestedY, scrollY, expected, rootAngle, angles });
+  }
+  frame.remove();
+  return measurements;
+}
+(async () => {
+  try {
+    const report = {};
+    for (const [path, cogSelectors] of Object.entries(selectors)) {
+      const readings = await checkPage(path, cogSelectors);
+      for (const row of readings) {
+        if (!row.scrollY || Math.abs(row.rootAngle - row.expected) > 0.01 || !row.angles.length ||
+            row.angles.some(angle => Math.abs(angle - row.expected) > 0.01)) {
+          throw new Error(`${path}: scroll=${row.scrollY}, expected=${row.expected}, root=${row.rootAngle}, cogs=${row.angles}`);
+        }
+      }
+      report[path] = readings;
+    }
+    results.textContent = `PASS ${JSON.stringify(report)}`;
+  } catch (error) {
+    results.textContent = `FAIL ${error.stack || error}`;
+  }
+})();
+</script>
