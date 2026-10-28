@@ -2,28 +2,22 @@
 
 ## Run on Replit
 
-Click **Run** to start the **Start application** workflow, or run:
+Use the **Start application** workflow or run `node server.mjs`. The static
+server listens on `0.0.0.0:5000`; no package installation or build step is
+required.
 
-```sh
-node server.mjs
-```
-
-The preview server uses the existing Node.js 20 runtime and listens on
-`0.0.0.0:5000`. No package installation, build step, secrets, or external
-services are needed. Open `/` for the landing page and `/studio.html` for
-the demo workspace.
-
-The original static HTML/CSS/JavaScript structure is unchanged. The server
-disables browser caching for development and excludes hidden project files
-and internal directories from public access. This is the project's sole
-preview workflow; no separate prototype or test server is needed.
+The homepage is the approved, self-contained `index.html`. It includes the
+responsive gear artwork, scroll-driven motion, platform previews, and preview
+dialogs. The current privacy and terms pages are available at `/privacy.html`
+and `/terms.html`. Historical Night Files legal pages are preserved under
+`/legacy/`.
 
 ## Product boundaries
 
-The studio is a local browser demo, not a live publisher. Draft and schedule
-metadata are stored in the browser; selected video previews last only for
-the current session. There is no authentication backend, social-account
-connection, media upload service, or automatic publishing.
+The landing page is a preview, not a live publisher. Platform selection only
+changes the preview state. Dialogs do not create accounts, submit or store
+email addresses, upload media, connect social accounts, or publish posts.
 
-Preserve the legacy OAuth callback and verification files. See README.md
-for the existing TikTok redirect warning.
+Preserve the existing callback and platform-verification files, but do not
+describe them as active integrations unless their live configuration has been
+verified.

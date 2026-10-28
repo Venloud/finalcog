@@ -12,7 +12,7 @@ const types = {
   '.png': 'image/png',
   '.txt': 'text/plain; charset=utf-8',
 };
-const publicDirectories = new Set(['assets', 'kindlediron', 'snapchat']);
+const publicDirectories = new Set(['assets', 'kindlediron', 'legacy', 'snapchat']);
 
 createServer(async (request, response) => {
   try {
