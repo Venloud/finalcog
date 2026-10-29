@@ -9,10 +9,10 @@ design. It has no build step or external runtime dependency.
 ## Website
 
 - The homepage is the self-contained `index.html`.
-- The large left gear shifts smoothly with browser width. All visible gears
-  rotate from vertical scroll at 0.12 degrees per pixel; selected secondary
-  gears counter-rotate. Scroll updates are frame-batched and reduced-motion
-  preferences are respected.
+- The large left gear gradually slides, fades, and is clipped away like a
+  curtain as the browser narrows. All visible gears rotate from vertical scroll
+  at 0.12 degrees per pixel; selected secondary gears counter-rotate. Scroll
+  updates are frame-batched and reduced-motion preferences are respected.
 - Platform previews cover TikTok, Instagram, YouTube, and Twitch. They are
   interface previews, not connected publishing integrations.
 - Sign-in and email actions open an honest preview dialog. No account is

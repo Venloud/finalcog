@@ -21,7 +21,7 @@ button{cursor:pointer}
 .frame{position:absolute;inset:24px 32px 24px -30px;border:1px solid #737b8155;border-radius:0 55px 55px 0}
 .frame:after{content:"";position:absolute;inset:10px;border:1px solid #737b8133;border-radius:inherit}
 .track{position:absolute;right:17px;top:10%;bottom:10%;border-left:1px solid var(--accent);opacity:.35}
-.large-cog{position:absolute;left:-430px;top:calc(50% - 330px);width:660px;height:660px;opacity:.55;transform:translateX(var(--cog-slide,0px));transition:transform 900ms cubic-bezier(.22,1,.36,1);will-change:transform}
+.large-cog{position:absolute;left:-430px;top:calc(50% - 330px);width:660px;height:660px;opacity:var(--cog-opacity,.55);clip-path:inset(0 var(--cog-curtain,0%) 0 0);transform:translateX(var(--cog-slide,0px));transition:transform 900ms cubic-bezier(.22,1,.36,1),clip-path 900ms cubic-bezier(.22,1,.36,1),opacity 900ms cubic-bezier(.22,1,.36,1);will-change:transform,clip-path,opacity}
 .small-machine{position:absolute;right:-72px;bottom:70px;width:150px;height:150px;opacity:.3}
 .cog{width:100%;height:100%;display:block;transform:rotate(var(--angle));transform-origin:center;transform-box:view-box}
 .reverse .cog{transform:rotate(calc(0deg - var(--angle)))}
@@ -95,7 +95,7 @@ dialog .white{width:100%}
 button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:5px}
 @media(max-width:720px){
 header{gap:13px;min-height:77px;margin-inline:5%}nav{display:none}.actions{margin-left:auto;gap:12px}.actions button{font-size:11px;padding:10px}.brand{font-size:18px}.brand-cog{width:19px;height:19px}
-.large-cog{opacity:.35}.hero{padding:75px 22px 65px;min-height:calc(100svh - 77px)}h1{font-size:11.8vw}.eyebrow{font-size:8px;letter-spacing:1px}.pitch{font-size:13px}
+ .hero{padding:75px 22px 65px;min-height:calc(100svh - 77px)}h1{font-size:11.8vw}.eyebrow{font-size:8px;letter-spacing:1px}.pitch{font-size:13px}
 .platforms{max-width:300px}.platforms button{min-width:125px}.entry{width:100%;max-width:330px}.entry button{width:100%}.section-heading{display:block}.section-heading p{margin-top:25px;max-width:none}.steps{grid-template-columns:1fr}section.content{padding:65px 25px}.step{min-height:240px}.footer-top{flex-direction:column}.footer-links{gap:65px}.footer-bottom{gap:25px;font-size:8px}.footer-bottom .middle{display:none}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.large-cog{transition:none}}
@@ -113,6 +113,7 @@ header{gap:13px;min-height:77px;margin-inline:5%}nav{display:none}.actions{margi
 <circle cx="100" cy="103" r="27" fill="none" stroke="currentColor"/>
 <path d="M100 35V51M100 155V171M32 103H48M152 103H168" stroke="currentColor" opacity=".6"/>
 <g fill="#0b0d0f" stroke="currentColor"><circle cx="100" cy="43" r="3"/><circle cx="160" cy="103" r="3"/><circle cx="100" cy="163" r="3"/><circle cx="40" cy="103" r="3"/></g>
+<path d="M100 8 107 29 100 25 93 29Z" fill="var(--accent)" stroke="#0b0d0f" stroke-width="1"/>
 <path d="M59 48A69 69 0 0 1 79 38" fill="none" stroke="var(--accent)" stroke-width="2"/>
 </symbol>
 </defs>
@@ -195,15 +196,19 @@ header{gap:13px;min-height:77px;margin-inline:5%}nav{display:none}.actions{margi
 const root=document.documentElement;
 let queued=false;
 function positionLargeCog(){
-  const offset=Math.max(-240,Math.min(0,(window.innerWidth-1348)*.25));
-  root.style.setProperty('--cog-slide',offset+'px');
+  const progress=Math.max(0,Math.min(1,(1120-window.innerWidth)/480));
+  root.style.setProperty('--cog-slide',(-progress*240)+'px');
+  root.style.setProperty('--cog-curtain',(progress*100)+'%');
+  root.style.setProperty('--cog-opacity',(0.55*(1-progress)).toFixed(3));
 }
 window.addEventListener('resize',positionLargeCog,{passive:true});
 positionLargeCog();
 function updateCogs(){
   queued=false;
   const scrollPosition=window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:Math.max(0,window.scrollY);
-  root.style.setProperty('--angle',(scrollPosition*.12)+'deg');
+  const angle=scrollPosition*.12;
+  root.style.setProperty('--angle',angle+'deg');
+  root.style.setProperty('--reverse-angle',(-angle)+'deg');
 }
 function requestUpdate(){
   if(!queued){queued=true;requestAnimationFrame(updateCogs)}
