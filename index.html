@@ -38,7 +38,7 @@
     button { color: inherit; font: inherit; }
     button, a { -webkit-tap-highlight-color: transparent; }
     a:focus-visible, button:focus-visible, summary:focus-visible {
-      outline: 2px solid var(--accent-line);
+      outline: 2px solid var(--paper);
       outline-offset: 4px;
     }
     .svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -51,8 +51,18 @@
       display: flex;
       align-items: center;
       gap: 36px;
-      border-bottom: 1px solid var(--line-soft);
+      border-bottom: 0;
     }
+    .site-header::before,
+    .site-header::after {
+      position: absolute;
+      right: 0;
+      left: 0;
+      content: "";
+      pointer-events: none;
+    }
+    .site-header::before { bottom: -1px; height: 2px; background: var(--haiti-blue); }
+    .site-header::after { bottom: -2px; height: 1px; background: var(--haiti-red); }
     .brand { display: inline-flex; align-items: center; gap: 2px; flex: none; font: 700 21px/1 var(--font-heading); letter-spacing: -.05em; }
     .brand-cog { display: inline-grid; width: 23px; height: 23px; margin: 0 1px; vertical-align: -3px; }
     .brand-cog svg { width: 100%; height: 100%; }
@@ -75,7 +85,7 @@
       font-weight: 500;
       transition: border-color 180ms ease-out, background-color 180ms ease-out, color 180ms ease-out;
     }
-    .button:hover { border-color: var(--accent-line); }
+    .button:hover { border-color: var(--line); }
     .button-primary { background: var(--haiti-blue); border-color: var(--haiti-blue); color: #fff; }
     .button-primary:hover { background: #1736b5; border-color: #1736b5; }
     .button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -111,7 +121,6 @@
       letter-spacing: -.055em;
       line-height: .96;
     }
-    .headline-accent { color: var(--red-tint); }
     .hero-copy .lead {
       max-width: 65ch;
       margin: 27px 0 0;
@@ -134,11 +143,12 @@
     .section-intro h2 { max-width: 690px; margin: 0; font-size: clamp(var(--type-40), 5.5vw, var(--type-64)); letter-spacing: -.05em; line-height: 1.04; }
     .section-intro p { max-width: 390px; margin: 0; color: var(--muted); font-size: var(--type-16); line-height: 1.75; }
     .section-marker { display: flex; align-items: center; gap: 13px; margin-bottom: 22px; color: var(--quiet); font: 12px/1.4 var(--font-meta); }
-    .section-marker::before { width: 18px; height: 2px; background: var(--blue-tint); box-shadow: 0 3px var(--red-tint); content: ""; }
+    .section-marker::before { width: 18px; height: 1px; background: var(--line); content: ""; }
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .step { min-height: 224px; padding: 23px 26px 27px 0; }
     .step + .step { border-left: 1px solid var(--line-soft); padding-left: 27px; }
-    .step-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--gold); font: 12px/1.4 var(--font-meta); }
+    .step-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--quiet); font: 12px/1.4 var(--font-meta); }
+    .step-index { color: var(--gold); }
     .step h3 { margin: 34px 0 9px; font-size: var(--type-20); letter-spacing: -.035em; }
     .step p { max-width: 320px; margin: 0; color: var(--muted); font-size: var(--type-14); line-height: 1.75; }
     .features-layout { display: grid; grid-template-columns: minmax(0, .83fr) minmax(350px, 1fr); align-items: center; gap: clamp(45px, 8vw, 108px); }
@@ -168,10 +178,21 @@
     details { border-bottom: 1px solid var(--line-soft); }
     summary { position: relative; padding: 19px 42px 19px 0; cursor: pointer; list-style: none; font-size: var(--type-16); font-weight: 500; }
     summary::-webkit-details-marker { display: none; }
-    summary::after { position: absolute; top: 17px; right: 2px; content: "+"; color: var(--gold); font: 20px/1 var(--font-meta); }
+    summary::after { position: absolute; top: 17px; right: 2px; content: "+"; color: var(--muted); font: 20px/1 var(--font-meta); }
     details[open] summary::after { content: "−"; }
     details p { max-width: 70ch; margin: -2px 35px 20px 0; color: var(--muted); font-size: var(--type-14); line-height: 1.75; }
-    .footer { padding-block: 42px 22px; }
+    .footer { position: relative; padding-block: 42px 22px; }
+    .footer::before,
+    .footer::after {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      content: "";
+      pointer-events: none;
+    }
+    .footer::before { height: 2px; background: var(--haiti-blue); }
+    .footer::after { top: 2px; height: 1px; background: var(--haiti-red); }
     .footer-top { display: flex; justify-content: space-between; gap: 40px; align-items: start; }
     .footer-brand p { margin: 14px 0 0; color: var(--quiet); font: 12px/1.5 var(--font-meta); }
     .footer-links { display: flex; flex-wrap: wrap; gap: clamp(35px, 6vw, 82px); }
@@ -238,8 +259,8 @@
       .container { width: calc(100% - 32px); }
       .header-action { gap: 8px; }
       .header-action .button { max-width: 132px; white-space: nowrap; }
-      .hero-actions { align-items: stretch; flex-direction: column; }
-      .hero-actions .button { width: 100%; }
+      .hero-actions { align-items: flex-start; flex-direction: column; }
+      .hero-actions .button { width: auto; }
       figcaption { align-items: flex-start; flex-direction: column; gap: 4px; }
       .footer-links { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
     }
@@ -308,7 +329,7 @@
     <main>
       <section class="hero container" aria-labelledby="hero-title">
         <div class="hero-copy">
-        <h1 id="hero-title">Keep the <span class="headline-accent">Momentum</span> Going.</h1>
+        <h1 id="hero-title">Keep the Momentum Going.</h1>
           <p class="lead">Upload finished videos in batches. Set a posting rhythm. Final Cog sends each one to your TikTok inbox drafts so you can review and finish inside TikTok.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="app/">Sign in with TikTok<svg aria-hidden="true"><use href="#arrow"/></svg></a>
@@ -326,17 +347,17 @@
           </div>
           <div class="steps">
             <article class="step">
-              <div class="step-top"><span>01 / Upload</span></div>
+              <div class="step-top"><span><span class="step-index">01</span> / Upload</span></div>
               <h3>Keep videos together.</h3>
               <p>Upload finished files in batches. Save a caption and hashtags with each video.</p>
             </article>
             <article class="step">
-              <div class="step-top"><span>02 / Schedule</span></div>
+              <div class="step-top"><span><span class="step-index">02</span> / Schedule</span></div>
               <h3>Choose your pace.</h3>
               <p>Set days and times, fill future slots, or move a video by hand in the queue or calendar.</p>
             </article>
             <article class="step">
-              <div class="step-top"><span>03 / Publish</span></div>
+              <div class="step-top"><span><span class="step-index">03</span> / Publish</span></div>
               <h3>Finish in TikTok.</h3>
               <p>Final Cog sends a video to your TikTok inbox drafts. Review it and publish from TikTok when ready.</p>
             </article>

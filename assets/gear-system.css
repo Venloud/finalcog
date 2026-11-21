@@ -3,15 +3,9 @@
   --schematic-paper: #f1f3f4;
   --haiti-blue: #00209f;
   --haiti-red: #d21034;
-  --blue-tint: #6e86ff;
-  --red-tint: #ff4d6a;
   --gold: #f1b517;
   --palm-green: #016a16;
-  --green-tint: #50d276;
-  --accent-line: var(--blue-tint);
-  --danger-line: var(--red-tint);
-  --schematic-accent: var(--haiti-blue);
-  --schematic-red: var(--haiti-red);
+  --schematic-hub: var(--haiti-blue);
   --schematic-gold: var(--gold);
   --schematic-grid-minor: #f1f3f409;
   --schematic-grid-major: #f1f3f40e;
@@ -68,7 +62,7 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--schematic-accent);
+  background: var(--schematic-hub);
   border: 1px solid var(--schematic-paper);
 }
 .gear-mark[data-teeth]::after {
@@ -238,7 +232,7 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--schematic-accent);
+  background: var(--schematic-hub);
   border: 1px solid var(--schematic-paper);
 }
 .topbar-machine,
