@@ -294,6 +294,78 @@ button, input, textarea, select { font-family: var(--font-body); }
 .calendar-day.outside { color: #aab3b8; }
 .field-control::placeholder { color: #aeb8bc; opacity: 1; }
 .media-tile, .file-cover { color: #aeb8bc; }
+.local-access {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background-color: var(--ink);
+}
+.local-access-card {
+  width: min(520px, 100%);
+  border: 1px solid var(--line);
+  padding: clamp(24px, 5vw, 42px);
+  background: #12181b;
+}
+.local-access-card h1 {
+  margin: 18px 0 10px;
+  font: 800 clamp(32px, 6vw, 48px)/1.02 var(--font-heading);
+  font-variation-settings: "wdth" 120, "wght" 800;
+  letter-spacing: -.05em;
+}
+.local-access-card p { color: var(--muted); font-size: 16px; line-height: 1.7; }
+.local-access-card code { color: var(--paper); font: 13px var(--font-meta); }
+.local-access-card form { display: grid; gap: 10px; margin-top: 24px; }
+.local-access-card label { color: var(--paper); font: 13px var(--font-meta); }
+.local-access-card input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  background: #0d1215;
+  color: var(--paper);
+  padding: 10px 12px;
+}
+.local-access-card form button { justify-self: start; margin-top: 5px; }
+.local-access-card .local-access-error { color: var(--amber); font-size: 14px; margin: 3px 0 0; }
+.local-access-help { border-top: 1px solid var(--line-soft); padding-top: 15px; font-size: 14px !important; }
+.account-chip, .channel-state {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font: 13px/1.3 var(--font-meta);
+  white-space: nowrap;
+}
+.channel-state { margin-left: auto; }
+.github-import {
+  border: 1px solid var(--line-soft);
+  padding: 19px;
+  margin: 26px 0 30px;
+}
+.github-import-head { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; }
+.github-import-head h2 { margin: 0; font: 700 20px/1.2 var(--font-heading); }
+.github-import-head p { color: var(--muted); font-size: 14px; margin: 7px 0 15px; }
+.github-source-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 9px; }
+.github-source-form label { display: grid; gap: 5px; color: var(--muted); font: 13px var(--font-meta); }
+.github-source-form input, .github-source-choice {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  background: #111719;
+  color: var(--paper);
+  padding: 8px 10px;
+}
+.github-source-form button { align-self: end; }
+.github-source-results { margin-top: 14px; }
+.github-source-results .github-source-choice { width: 100%; }
+.github-import-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.github-import-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.github-source-meta { color: var(--quiet); font: 13px/1.6 var(--font-meta); margin-top: 8px; }
+.library-source { display: inline-block; color: var(--quiet); font: 13px/1.5 var(--font-meta); margin-top: 6px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+@media (max-width: 680px) {
+  .github-source-form { grid-template-columns: 1fr; }
+  .github-source-form button { justify-self: start; }
 }

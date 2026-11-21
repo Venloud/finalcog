@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { deflateRawSync } from 'node:zlib';
 import { test } from 'node:test';
 
 const dataDir = await mkdtemp(join(tmpdir(), 'finalcog-test-'));
@@ -13,6 +14,8 @@ process.env.TIKTOK_REDIRECT_URI = 'https://venloud.github.io/finalcog/tiktok-cal
 process.env.TIKTOK_CLIENT_KEY = 'test-public-client-key';
 process.env.TIKTOK_CLIENT_SECRET = 'test-server-client-secret';
 process.env.SESSION_SECRET = 'local-test-secret-with-more-than-thirty-two-characters';
+process.env.FINALCOG_API_TOKEN = 'test-local-api-token-with-at-least-thirty-two-characters';
+process.env.GITHUB_TOKEN = 'test-github-token';
 
 const { createApplicationServer } = await import('../lib/application.mjs');
 const { createScheduler } = await import('../lib/scheduler.mjs');
@@ -32,11 +35,65 @@ const {
 const { createAuthorizeUrl, exchangeAuthorizationCode, fetchUserProfile, initializeInboxUpload } =
   await import('../lib/tiktok.mjs');
 const { generateSlots, validateSettings } = await import('../lib/schedule-utils.mjs');
+const { createFinalCogMcpServer, MCP_TOOL_NAMES } = await import('../lib/mcp.mjs');
+const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js');
+const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
 
 const jsonResponse = (value, status = 200) => new Response(JSON.stringify(value), {
   status,
   headers: { 'Content-Type': 'application/json' },
 });
+
+function makeZip(entries) {
+  const crc32 = data => {
+    let crc = 0xffffffff;
+    for (const byte of data) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const item of entries) {
+    const filename = Buffer.from(item.name);
+    const content = Buffer.from(item.content);
+    const compressed = deflateRawSync(content);
+    const checksum = crc32(content);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(checksum, 14);
+    local.writeUInt32LE(compressed.length, 18);
+    local.writeUInt32LE(content.length, 22);
+    local.writeUInt16LE(filename.length, 26);
+    locals.push(local, filename, compressed);
+
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt32LE(checksum, 16);
+    central.writeUInt32LE(compressed.length, 20);
+    central.writeUInt32LE(content.length, 24);
+    central.writeUInt16LE(filename.length, 28);
+    central.writeUInt32LE(offset, 42);
+    centrals.push(central, filename);
+    offset += local.length + filename.length + compressed.length;
+  }
+  const centralData = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(centralData.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, centralData, end]);
+}
 
 test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
   const originalFetch = globalThis.fetch;
@@ -44,6 +101,8 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
   let base;
   let user;
   let sessionCookie;
+  let githubMedia;
+  let pacingMediaId;
 
   t.after(async () => {
     globalThis.fetch = originalFetch;
@@ -73,7 +132,8 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
   const call = (path, options = {}) => {
     const headers = new Headers(options.headers || {});
     if (options.auth !== false) headers.set('Cookie', sessionCookie);
-    if (options.origin !== false) headers.set('Origin', base);
+    if (options.apiToken !== false) headers.set('Authorization', `Bearer ${process.env.FINALCOG_API_TOKEN}`);
+    if (options.origin !== false) headers.set('Origin', typeof options.origin === 'string' ? options.origin : base);
     let body = options.body;
     if (options.json !== undefined) {
       headers.set('Content-Type', 'application/json');
@@ -136,12 +196,40 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
     assert.equal(profile.display_name, 'Creator');
   });
 
+  await t.test('protects JSON routes with the local API token', async () => {
+    const unauthenticated = await fetch(`${base}/api/queue`);
+    assert.equal(unauthenticated.status, 401);
+    const invalid = await call('/api/auth/local', {
+      method: 'POST',
+      auth: false,
+      apiToken: false,
+      json: { token: 'wrong-token' },
+    });
+    assert.equal(invalid.status, 401);
+    assert.doesNotMatch(await invalid.text(), /test-local-api-token/);
+
+    const exchange = await call('/api/auth/local', {
+      method: 'POST',
+      auth: false,
+      apiToken: false,
+      json: { token: process.env.FINALCOG_API_TOKEN },
+    });
+    assert.equal(exchange.status, 200);
+    const localCookie = exchange.headers.get('set-cookie');
+    assert.match(localCookie, /^finalcog_api_session=/);
+    assert.match(localCookie, /HttpOnly/);
+    assert.match(localCookie, /SameSite=Strict/);
+    const localAccess = await fetch(`${base}/api/accounts`, { headers: { Cookie: localCookie.split(';')[0] } });
+    assert.equal(localAccess.status, 200);
+    assert.equal((await localAccess.json()).tiktok, null);
+  });
+
   await t.test('requires same-origin changes and stores video plus caption variants locally', async () => {
     const session = await call('/api/session');
     assert.equal(session.status, 200);
     assert.equal((await session.json()).authenticated, true);
 
-    const blocked = await call('/api/auth/logout', { method: 'POST', origin: false });
+    const blocked = await call('/api/auth/logout', { method: 'POST', origin: 'https://attacker.example' });
     assert.equal(blocked.status, 403);
 
     const form = new FormData();
@@ -162,6 +250,137 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
     assert.equal(saved.status, 200);
     assert.equal((await saved.json()).captionVariants.instagram, 'Reels caption');
     assert.equal((await call('/api/library')).status, 200);
+  });
+
+  await t.test('imports a GitHub release video with source metadata and a mocked API', async () => {
+    const calls = [];
+    globalThis.fetch = async (input, options = {}) => {
+      const url = String(input);
+      if (!url.startsWith('https://api.github.com/')) return originalFetch(input, options);
+      calls.push({ url, headers: options.headers });
+      if (url.endsWith('/releases/tags/v1.4.0')) {
+        return jsonResponse({
+          tag_name: 'v1.4.0',
+          name: 'Final Cog release',
+          assets: [{
+            id: 42,
+            name: 'creator-cut.mp4',
+            label: 'Creator cut',
+            size: 5,
+            url: 'https://api.github.com/repos/venloud/finalcog/releases/assets/42',
+          }],
+        });
+      }
+      if (url.endsWith('/releases/assets/42')) {
+        assert.equal(options.headers.Authorization, `Bearer ${process.env.GITHUB_TOKEN}`);
+        return new Response(new Uint8Array([0, 1, 2, 3, 4]), {
+          status: 200,
+          headers: { 'content-length': '5', 'content-type': 'application/octet-stream' },
+        });
+      }
+      throw new Error(`Unexpected mocked GitHub request: ${url}`);
+    };
+    try {
+      const imported = await call('/api/github/import', {
+        method: 'POST',
+        json: { owner: 'venloud', repo: 'finalcog', tag: 'v1.4.0', assetName: 'creator-cut.mp4' },
+      });
+      assert.equal(imported.status, 201);
+      githubMedia = await imported.json();
+      assert.equal(githubMedia.filename, 'creator-cut.mp4');
+      assert.equal(githubMedia.caption, 'Creator cut');
+      assert.equal(githubMedia.source.provider, 'github-release');
+      assert.equal(githubMedia.source.owner, 'venloud');
+      assert.equal(githubMedia.source.repo, 'finalcog');
+      assert.equal(githubMedia.source.tag, 'v1.4.0');
+      assert.equal(githubMedia.source.fileName, 'creator-cut.mp4');
+      assert.ok(githubMedia.source.downloadedAt);
+      assert.equal(calls.length, 2);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  await t.test('lists recent GitHub release videos and non-expired run artifacts', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input, options = {}) => {
+      const url = String(input);
+      if (!url.startsWith('https://api.github.com/')) return originalFetch(input, options);
+      assert.equal(options.headers.Authorization, `Bearer ${process.env.GITHUB_TOKEN}`);
+      if (url.endsWith('/releases?per_page=10')) {
+        return jsonResponse([{
+          tag_name: 'v3.0.0',
+          name: 'Release 3',
+          published_at: '2026-11-01T12:00:00Z',
+          assets: [
+            { id: 1, name: 'promo.mp4', label: 'Promo', size: 50 },
+            { id: 2, name: 'notes.txt', label: '', size: 1 },
+          ],
+        }]);
+      }
+      if (url.endsWith('/actions/runs?per_page=5')) {
+        return jsonResponse({ workflow_runs: [{ id: 303, display_title: 'Render final', head_branch: 'main' }] });
+      }
+      if (url.endsWith('/actions/runs/303/artifacts?per_page=100')) {
+        return jsonResponse({ artifacts: [
+          { id: 4, name: 'short-video', size_in_bytes: 100, expired: false },
+          { id: 5, name: 'expired-video', size_in_bytes: 100, expired: true },
+        ] });
+      }
+      throw new Error(`Unexpected mocked GitHub source request: ${url}`);
+    };
+    try {
+      const response = await call('/api/github/sources?owner=venloud&repo=finalcog');
+      assert.equal(response.status, 200);
+      const sources = await response.json();
+      assert.equal(sources.releases[0].assets.length, 1);
+      assert.equal(sources.releases[0].assets[0].name, 'promo.mp4');
+      assert.equal(sources.runs[0].artifacts.length, 1);
+      assert.equal(sources.runs[0].artifacts[0].name, 'short-video');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  await t.test('extracts one MP4 from a mocked GitHub Actions artifact ZIP', async () => {
+    const zip = makeZip([{ name: 'exports/short-final.mp4', content: new Uint8Array([9, 8, 7, 6]) }]);
+    globalThis.fetch = async (input, options = {}) => {
+      const url = String(input);
+      if (!url.startsWith('https://api.github.com/')) return originalFetch(input, options);
+      if (url.endsWith('/actions/runs/707/artifacts?per_page=100')) {
+        return jsonResponse({
+          artifacts: [{
+            id: 808,
+            name: 'final-cut',
+            size_in_bytes: zip.length,
+            expired: false,
+            archive_download_url: 'https://api.github.com/repos/venloud/finalcog/actions/artifacts/808/zip',
+          }],
+        });
+      }
+      if (url.endsWith('/actions/artifacts/808/zip')) {
+        return new Response(zip, {
+          status: 200,
+          headers: { 'content-length': String(zip.length), 'content-type': 'application/zip' },
+        });
+      }
+      throw new Error(`Unexpected mocked GitHub Actions request: ${url}`);
+    };
+    try {
+      const imported = await call('/api/github/import', {
+        method: 'POST',
+        json: { owner: 'venloud', repo: 'finalcog', runId: '707', artifactName: 'final-cut' },
+      });
+      assert.equal(imported.status, 201);
+      const media = await imported.json();
+      assert.equal(media.filename, 'short-final.mp4');
+      assert.equal(media.caption, 'short-final');
+      assert.equal(media.source.provider, 'github-actions');
+      assert.equal(media.source.runId, '707');
+      assert.equal(media.source.artifactName, 'final-cut');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   await t.test('enforces pacing, schedule settings, and terminal provider retries', async () => {
@@ -279,5 +498,187 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
     updatePostStatus(duePost.id, 'failed', { errorReason: 'TikTok flagged this upload', retryAllowed: false });
     const noRetry = await call(`/api/queue/${duePost.id}/retry`, { method: 'POST', json: {} });
     assert.equal(noRetry.status, 409);
+  });
+
+  await t.test('adds and schedules videos through the JSON API with server-side pacing', async () => {
+    const localPath = join(dataDir, 'agent-source.mp4');
+    await writeFile(localPath, new Uint8Array([5, 4, 3, 2, 1]));
+    const added = await call('/api/videos', {
+      method: 'POST',
+      json: { filePath: localPath, caption: 'Agent import', hashtags: '#local' },
+    });
+    assert.equal(added.status, 201);
+    const media = await added.json();
+    assert.equal(media.caption, 'Agent import');
+    assert.equal(media.source.provider, 'local-file');
+
+    const firstTime = Date.now() + 20 * 60 * 60 * 1000;
+    const scheduled = await call(`/api/videos/${media.id}/schedule`, {
+      method: 'POST',
+      json: { scheduledAt: new Date(firstTime).toISOString() },
+    });
+    assert.equal(scheduled.status, 201);
+    const queueItem = await scheduled.json();
+    assert.equal(queueItem.status, 'Queued');
+
+    const spacingPath = join(dataDir, 'spacing-source.mp4');
+    await writeFile(spacingPath, new Uint8Array([1, 3, 5, 7]));
+    const spacingAdded = await call('/api/videos', {
+      method: 'POST',
+      json: { filePath: spacingPath },
+    });
+    pacingMediaId = (await spacingAdded.json()).id;
+    const tooClose = await call(`/api/videos/${pacingMediaId}/schedule`, {
+      method: 'POST',
+      json: { scheduledAt: new Date(firstTime + 60 * 60 * 1000).toISOString() },
+    });
+    assert.equal(tooClose.status, 409);
+    assert.match((await tooClose.json()).error, /at least 3 hours apart/);
+
+    const status = await call(`/api/videos/${queueItem.id}/status`);
+    assert.equal(status.status, 200);
+    assert.equal((await status.json()).queueItem.id, queueItem.id);
+  });
+
+  await t.test('exposes agent tools and enforces pacing and flagged-send refusal through MCP', async () => {
+    const apiToken = process.env.FINALCOG_API_TOKEN;
+    const mcp = createFinalCogMcpServer({ baseUrl: base, token: apiToken });
+    const client = new Client({ name: 'finalcog-test-client', version: '1.0.0' });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await mcp.connect(serverTransport);
+    await client.connect(clientTransport);
+    try {
+      const tools = await client.listTools();
+      assert.deepEqual(tools.tools.map(tool => tool.name).sort(), [...MCP_TOOL_NAMES].sort());
+      const queue = await client.callTool({ name: 'list_queue', arguments: {} });
+      assert.ok(queue.structuredContent.items.length >= 1);
+
+      const localPath = join(dataDir, 'mcp-source.mp4');
+      await writeFile(localPath, new Uint8Array([8, 7, 6, 5]));
+      const added = await client.callTool({
+        name: 'add_video',
+        arguments: { filePath: localPath, caption: 'From an MCP agent' },
+      });
+      assert.equal(added.structuredContent.caption, 'From an MCP agent');
+      const videoId = added.structuredContent.id;
+
+      const firstTime = Date.now() + 28 * 60 * 60 * 1000;
+      const scheduled = await client.callTool({
+        name: 'schedule_video',
+        arguments: { videoId, scheduledAt: new Date(firstTime).toISOString() },
+      });
+      assert.equal(scheduled.structuredContent.status, 'Queued');
+      const queueId = scheduled.structuredContent.id;
+
+      const pacingRefusal = await client.callTool({
+        name: 'schedule_video',
+        arguments: {
+          videoId: pacingMediaId,
+          scheduledAt: new Date(firstTime + 60 * 60 * 1000).toISOString(),
+        },
+      });
+      assert.equal(pacingRefusal.isError, true);
+      assert.match(pacingRefusal.content[0].text, /at least 3 hours apart/);
+
+      const moved = await client.callTool({
+        name: 'reschedule',
+        arguments: { queueId, scheduledAt: new Date(firstTime + 8 * 60 * 60 * 1000).toISOString() },
+      });
+      assert.equal(moved.structuredContent.id, queueId);
+      const status = await client.callTool({ name: 'get_status', arguments: { id: videoId } });
+      assert.equal(status.structuredContent.queueItems[0].id, queueId);
+
+      db.prepare(`
+        UPDATE posts SET status = 'failed', publish_id = 'flagged-publish-id',
+          retry_allowed = 0, error_reason = 'TikTok flagged this upload'
+        WHERE id = ?
+      `).run(queueId);
+      const flaggedRefusal = await client.callTool({
+        name: 'send_to_tiktok_drafts',
+        arguments: { videoId },
+      });
+      assert.equal(flaggedRefusal.isError, true);
+      assert.match(flaggedRefusal.content[0].text, /never resend/i);
+
+      const accounts = await client.callTool({ name: 'list_accounts', arguments: {} });
+      assert.equal(accounts.structuredContent.tiktok.displayName, 'Test Creator');
+      const settings = await client.callTool({ name: 'get_settings', arguments: {} });
+      assert.equal(settings.structuredContent.minSpacingHours, 3);
+    } finally {
+      await client.close();
+      await mcp.close();
+    }
+  });
+
+  await t.test('imports a GitHub release asset through the MCP tool', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input, options = {}) => {
+      const url = String(input);
+      if (url === 'https://api.github.com/repos/venloud/finalcog/releases/tags/v2.0.0') {
+        return jsonResponse({
+          tag_name: 'v2.0.0',
+          name: 'Final Cog 2',
+          assets: [{
+            name: 'launch-cut.mp4',
+            label: 'Launch cut',
+            size: 4,
+            url: 'https://api.github.com/repos/venloud/finalcog/releases/assets/99',
+          }],
+        });
+      }
+      if (url === 'https://api.github.com/repos/venloud/finalcog/releases/assets/99') {
+        return new Response(new Uint8Array([2, 4, 6, 8]), { status: 200 });
+      }
+      return originalFetch(input, options);
+    };
+    const mcp = createFinalCogMcpServer({
+      baseUrl: base,
+      token: process.env.FINALCOG_API_TOKEN,
+      fetchImpl: (input, options) => originalFetch(input, options),
+    });
+    const client = new Client({ name: 'finalcog-github-test-client', version: '1.0.0' });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await mcp.connect(serverTransport);
+    await client.connect(clientTransport);
+    try {
+      const result = await client.callTool({
+        name: 'import_github_artifact',
+        arguments: { owner: 'venloud', repo: 'finalcog', tag: 'v2.0.0', assetName: 'launch-cut.mp4' },
+      });
+      assert.equal(result.structuredContent.caption, 'Launch cut');
+      assert.equal(result.structuredContent.source.provider, 'github-release');
+      assert.equal(result.structuredContent.source.tag, 'v2.0.0');
+    } finally {
+      await client.close();
+      await mcp.close();
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  await t.test('rejects MCP requests without a local bearer token', async () => {
+    const response = await fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Host: `127.0.0.1:${new URL(base).port}` },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
+    });
+    assert.equal(response.status, 401);
+  });
+
+  await t.test('serves the tools over authenticated localhost Streamable HTTP', async () => {
+    const client = new Client({ name: 'finalcog-http-test-client', version: '1.0.0' });
+    const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp`), {
+      requestInit: {
+        headers: { Authorization: `Bearer ${process.env.FINALCOG_API_TOKEN}` },
+      },
+    });
+    try {
+      await client.connect(transport);
+      const tools = await client.listTools();
+      assert.deepEqual(tools.tools.map(tool => tool.name).sort(), [...MCP_TOOL_NAMES].sort());
+      const accounts = await client.callTool({ name: 'list_accounts', arguments: {} });
+      assert.equal(accounts.structuredContent.tiktok.displayName, 'Test Creator');
+    } finally {
+      await client.close();
+    }
   });
 });

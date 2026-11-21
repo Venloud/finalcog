@@ -30,6 +30,8 @@ APP_BASE_URL=http://localhost:5000
 DATA_DIR=./data
 MAX_UPLOAD_MB=1024
 MIN_SPACING_HOURS=3
+FINALCOG_API_TOKEN=replace_with_a_random_secret_at_least_32_characters
+GITHUB_TOKEN=
 TIKTOK_CLIENT_KEY=your_tiktok_client_key
 TIKTOK_CLIENT_SECRET=your_tiktok_client_secret
 SESSION_SECRET=replace_with_a_random_secret_at_least_32_characters
@@ -42,6 +44,8 @@ Generate a session secret in PowerShell with:
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
+Generate the API token the same way and set it as `FINALCOG_API_TOKEN`. Every `/api/*` route and `/mcp` requires this token; the web app exchanges it for an HttpOnly browser session and does not store the token in local storage. `GITHUB_TOKEN` is optional for public repositories, but required for private repositories and many GitHub Actions downloads. Use a fine-grained token with read-only Contents and Actions access for the selected repositories.
+
 Keep `.env` private and out of version control. It is ignored by Git. The `.env.example` file contains names and safe defaults only. The app encrypts TikTok tokens using `SESSION_SECRET`; keep that value stable and private or the saved tokens cannot be decrypted.
 
 Start the server with:
@@ -53,6 +57,59 @@ npm start
 Open **http://localhost:5000/** for the marketing site and **http://localhost:5000/app/** for the workspace. The server uses port 5000 by default. It stores SQLite data in `data/finalcog.sqlite` and uploaded video files in `data/uploads/`. Back up the SQLite file and uploads folder together.
 
 To start it when Windows boots, create a Task Scheduler task that runs `npm.cmd` with the argument `start`, with the project folder set as **Start in**. Keep the PC awake and the Node process running for scheduled inbox uploads to happen.
+
+### Local API and MCP
+
+The JSON API is served by the same Node process as the app. It binds to `127.0.0.1` by default. API clients authenticate with `Authorization: Bearer <FINALCOG_API_TOKEN>`; browser requests use the local HttpOnly session created by the app's token screen. Mutating requests from scripts should stay on loopback.
+
+Useful routes:
+
+| Method and route | Purpose |
+| --- | --- |
+| `POST /api/auth/local` | Exchange the local API token for a browser session |
+| `GET /api/queue` | Read upcoming queue items |
+| `GET /api/videos` | Read the library |
+| `POST /api/videos` | Import a local `filePath` or public HTTPS `url` |
+| `PATCH /api/videos/:id` | Update a library video's caption and hashtags |
+| `POST /api/videos/:id/schedule` | Schedule a library video |
+| `PATCH /api/queue/:id` | Reschedule an existing queued item |
+| `POST /api/videos/:id/send-to-drafts` | Queue an eligible video for TikTok inbox drafts |
+| `GET /api/videos/:id/status` | Read a library video or queue item's status |
+| `GET /api/accounts` | Read connected platform accounts |
+| `GET /api/settings` / `PUT /api/settings` | Read or update the posting rhythm |
+| `GET /api/github/sources?owner=...&repo=...` | List recent releases and Actions artifacts containing videos |
+| `POST /api/github/import` | Copy a release video or Actions-artifact video into the library |
+
+All queue and retry rules are enforced by the server. TikTok uploads go to the inbox-draft endpoint only; there is no public-posting API. TikTok-processed, flagged, or uncertain videos cannot be retried. At least the configured minimum spacing is enforced between uploads, even when an AI agent calls the API or MCP tools.
+
+The official `@modelcontextprotocol/sdk` exposes the same API through a stdio server and a localhost Streamable HTTP endpoint at `http://127.0.0.1:5000/mcp`. Start Final Cog first. MCP tools include `list_queue`, `add_video`, `import_github_artifact`, `update_caption`, `schedule_video`, `reschedule`, `send_to_tiktok_drafts`, `get_status`, `list_accounts`, `get_settings`, and `set_posting_rhythm`.
+You can also launch the stdio server manually with `npm run mcp`.
+
+To use stdio with Claude Code, add the server from a terminal:
+
+```powershell
+claude mcp add --transport stdio finalcog -- node "C:\path\to\finalcog\mcp-server.mjs"
+```
+
+For Claude Desktop, add this entry to its `claude_desktop_config.json`, replacing the script path with the local project path:
+
+```json
+{
+  "mcpServers": {
+    "finalcog": {
+      "command": "node",
+      "args": ["C:\\path\\to\\finalcog\\mcp-server.mjs"],
+      "env": {
+        "FINALCOG_API_URL": "http://127.0.0.1:5000"
+      }
+    }
+  }
+}
+```
+
+The MCP process reads `FINALCOG_API_TOKEN` from the project `.env`; do not put the token in a checked-in config file. For a client that supports Streamable HTTP, use `http://127.0.0.1:5000/mcp` and send the same token as a Bearer credential. The HTTP MCP endpoint rejects non-local connections and non-local browser origins.
+
+GitHub imports support a release tag plus asset name, a direct GitHub release-download URL, or an Actions run ID plus artifact name. Actions ZIPs must contain exactly one supported video. Imported entries retain the source repository, tag or run, original asset name, and download time.
 
 ### TikTok setup and callback
 

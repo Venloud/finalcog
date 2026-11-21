@@ -7,7 +7,7 @@
   const notice = document.getElementById("server-notice");
   const isStaticGithubPages = location.hostname.endsWith("github.io");
   const pages = { queue: "Queue", calendar: "Calendar", library: "Library", accounts: "Accounts", settings: "Settings" };
-  const state = { activeView: "queue", session: null, queue: [], library: [], settings: null, accounts: null, month: new Date(), busy: false };
+  const state = { activeView: "queue", session: null, queue: [], library: [], settings: null, accounts: null, month: new Date(), busy: false, localAuthorized: false };
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const fullDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -27,7 +27,11 @@
     const text = await response.text();
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-    if (!response.ok) throw new Error(data?.error || data?.message || `Request failed (${response.status})`);
+    if (!response.ok) {
+      const error = new Error(data?.error || data?.message || `Request failed (${response.status})`);
+      error.status = response.status;
+      throw error;
+    }
     return data;
   }
 
@@ -44,6 +48,14 @@
     else { element.disabled = false; if (element.dataset.originalLabel) element.textContent = element.dataset.originalLabel; }
   }
   function shellNotice(message) { notice.hidden = !message; notice.textContent = message || ""; }
+  function showLocalAccess(message = "") {
+    state.localAuthorized = false;
+    document.getElementById("app-shell").hidden = true;
+    document.getElementById("local-access").hidden = false;
+    const error = document.getElementById("local-access-error");
+    error.hidden = !message;
+    error.textContent = message;
+  }
   function showError(message, retry) {
     return `<div class="error-panel"><div><strong>Could not load this view.</strong><p>${esc(message)}</p></div><button class="button button-small" data-action="reload-view">Try again</button></div>`;
   }
@@ -134,6 +146,15 @@
   function renderLibrary() {
     view.innerHTML = `<div class="page-heading"><div><h1>Video library</h1><p>Keep finished videos together. Add the words and tags you want to use when they're queued.</p></div></div>
       <div class="upload-zone" id="upload-zone"><div class="upload-symbol">${icon("upload")}</div><div class="upload-copy"><strong>Drop finished videos here</strong><span>Choose one or more video files to upload to your library.</span></div><input type="file" id="file-input" accept="video/*" multiple hidden><button class="button button-accent" data-action="pick-files">Choose files</button></div>
+      <section class="github-import" aria-labelledby="github-import-title">
+        <div class="github-import-head"><div><h2 id="github-import-title">Import from GitHub</h2><p>Find recent video assets in a repository release or Actions run.</p></div><span class="section-kicker">LOCAL COPY / SOURCE RECORDED</span></div>
+        <form id="github-source-form" class="github-source-form">
+          <label>Owner<input name="owner" maxlength="100" placeholder="owner" required></label>
+          <label>Repository<input name="repo" maxlength="100" placeholder="repository" required></label>
+          <button class="button button-muted" type="submit">Find videos</button>
+        </form>
+        <div class="github-source-results" id="github-source-results" aria-live="polite"></div>
+      </section>
       <div class="library-toolbar"><p>${state.library.length ? `${state.library.length} ${state.library.length === 1 ? "video" : "videos"} in your library` : "Your uploaded videos will appear here."}</p><span class="section-kicker">CAPTION / HASHTAGS CAN BE EDITED ANYTIME</span></div>
       ${state.library.length ? `<div class="library-list">${state.library.map(libraryItem).join("")}</div>` : `<div class="empty-state">${emptyMachine()}<h2>Your library is clear</h2><p>Start with finished, export-ready videos. Each upload stays here until you schedule it or remove it.</p></div>`}
       <div class="workflow-note">Uploads are sent to TikTok inbox drafts when scheduled. You finish the publishing steps inside TikTok.</div>`;
@@ -150,9 +171,14 @@
   }
   function libraryItem(item) {
     const variants = item.captionVariants && typeof item.captionVariants === "object" ? item.captionVariants : {};
+    const source = item.source;
+    const sourceLabel = source?.provider?.startsWith("github")
+      ? `GitHub ${source.owner}/${source.repo}${source.tag ? ` · ${source.tag}` : source.runId ? ` · run ${source.runId}` : ""}`
+      : source?.provider === "local-file" ? "Imported from local file"
+        : source?.provider === "https-url" ? "Imported from HTTPS URL" : "";
     return `<article class="library-item" data-library-id="${esc(item.id)}">
       <div class="file-cover">${icon("video")}</div>
-      <div class="library-file">${esc(item.filename)}<small>${esc(fileSize(item.size || 0))} · ${esc(item.mimeType || "Video")}</small></div>
+      <div class="library-file">${esc(item.filename)}<small>${esc(fileSize(item.size || 0))} · ${esc(item.mimeType || "Video")}</small>${sourceLabel ? `<span class="library-source">${esc(sourceLabel)}</span>` : ""}</div>
       <div class="library-edit">
         <label for="caption-${esc(item.id)}">TikTok caption</label>
         <textarea id="caption-${esc(item.id)}" class="field-control caption-input" rows="2" aria-label="TikTok caption for ${esc(item.filename)}" placeholder="Write a caption">${esc(item.caption || variants.tiktok || "")}</textarea>
@@ -168,6 +194,48 @@
       </div>
       <div class="library-tools"><button class="text-action" data-action="save-library" data-id="${esc(item.id)}">Save</button><button class="text-action" data-action="schedule-library" data-id="${esc(item.id)}">Schedule</button><button class="text-action" data-action="delete-library" data-id="${esc(item.id)}">Remove</button></div>
     </article>`;
+  }
+  function githubChoices(sources) {
+    const options = [];
+    for (const release of sources.releases || []) {
+      for (const asset of release.assets || []) {
+        options.push({
+          label: `Release ${release.tag} · ${asset.title || asset.name}`,
+          request: { owner: sources.owner, repo: sources.repo, tag: release.tag, assetName: asset.name },
+        });
+      }
+    }
+    for (const run of sources.runs || []) {
+      for (const artifact of run.artifacts || []) {
+        options.push({
+          label: `Actions ${run.title} · ${artifact.name}`,
+          request: { owner: sources.owner, repo: sources.repo, runId: String(run.id), artifactName: artifact.name },
+        });
+      }
+    }
+    const results = document.getElementById("github-source-results");
+    if (!options.length) {
+      results.innerHTML = `<p class="github-import-empty">No video assets or unexpired Actions artifacts were found in that repository.</p>`;
+      return;
+    }
+    results.innerHTML = `<label class="section-kicker" for="github-source-choice">RECENT VIDEO SOURCES</label>
+      <select class="github-source-choice" id="github-source-choice">${options.map(option =>
+        `<option value="${esc(encodeURIComponent(JSON.stringify(option.request)))}">${esc(option.label)}</option>`
+      ).join("")}</select>
+      <div class="github-source-meta">${options.length} source${options.length === 1 ? "" : "s"} available. Imports are copied into this creator's local library.</div>
+      <div class="github-import-actions"><button class="button button-accent" data-action="import-github">Import selected video</button></div>`;
+  }
+  async function loadGithubSources(form) {
+    const results = document.getElementById("github-source-results");
+    const owner = form.elements.owner.value.trim();
+    const repo = form.elements.repo.value.trim();
+    results.innerHTML = `<p class="github-import-empty">Loading repository releases and recent workflow artifacts…</p>`;
+    try {
+      const query = new URLSearchParams({ owner, repo });
+      githubChoices(await api(`/api/github/sources?${query}`));
+    } catch (error) {
+      results.innerHTML = `<p class="github-import-empty">${esc(error.message)}</p>`;
+    }
   }
   function renderAccounts() {
     const t = state.accounts?.tiktok;
@@ -229,7 +297,7 @@
       chip.innerHTML = `<span class="account-dot"></span><span>${esc(label)}</span>`;
       chip.classList.toggle("connected", !!state.session?.authenticated);
       document.getElementById("channel-state").textContent = account ? "Connected" : "Not connected";
-      document.getElementById("connect-top").hidden = !!account;
+      document.getElementById("connect-top").hidden = isStaticGithubPages || !state.session?.configured || !!account;
       if (isStaticGithubPages) {
         shellNotice("GitHub Pages serves the marketing site only. Run Final Cog locally to use your TikTok account, queue, library, and uploads.");
       } else if (!state.session?.configured) {
@@ -280,6 +348,16 @@
         openSchedule();
       } else if (action === "close-dialog") closeDialog();
       else if (action === "pick-files") document.getElementById("file-input").click();
+      else if (action === "import-github") {
+        const choice = document.getElementById("github-source-choice");
+        if (!choice?.value) { showToast("Find a GitHub video source first.", true); return; }
+        const source = JSON.parse(decodeURIComponent(choice.value));
+        setBusy(button, true, "Importing…");
+        const item = await api("/api/github/import", { method: "POST", body: source });
+        state.library = [item, ...state.library];
+        showToast(`Imported ${item.filename} to the library.`);
+        renderLibrary();
+      }
       else if (action === "edit-queue") openSchedule(findQueue(id));
       else if (action === "send-now") {
         setBusy(button, true, "Queuing…"); await api(`/api/queue/${encodeURIComponent(id)}/send-now`, { method: "POST" }); showToast("Queued for immediate TikTok draft upload."); await refreshCurrent();
@@ -336,13 +414,34 @@
   });
 
   document.addEventListener("submit", async event => {
+    if (event.target.id === "local-access-form") {
+      event.preventDefault();
+      const tokenInput = event.target.elements.token;
+      const errorNode = document.getElementById("local-access-error");
+      try {
+        await api("/api/auth/local", { method: "POST", body: { token: tokenInput.value } });
+        tokenInput.value = "";
+        errorNode.hidden = true;
+        await initializeWorkspace();
+      } catch (error) {
+        tokenInput.value = "";
+        errorNode.textContent = error.message;
+        errorNode.hidden = false;
+      }
+      return;
+    }
+    if (event.target.id === "github-source-form") {
+      event.preventDefault();
+      await loadGithubSources(event.target);
+      return;
+    }
     if (event.target.id === "schedule-form") {
       event.preventDefault();
       const form = event.target;
       try {
         const values = inputValuesFromSchedule(form);
         if (form.dataset.editId) await api(`/api/queue/${encodeURIComponent(form.dataset.editId)}`, { method: "PATCH", body: { scheduledAt: values.scheduledAt, caption: values.caption, hashtags: values.hashtags } });
-        else await api("/api/queue", { method: "POST", body: values });
+        else await api(`/api/videos/${encodeURIComponent(values.mediaId)}/schedule`, { method: "POST", body: values });
         closeDialog(); showToast(form.dataset.editId ? "Schedule updated." : "Added to queue."); await refreshCurrent();
       } catch (error) { showToast(error.message, true); }
     }
@@ -376,13 +475,24 @@
     }
   });
 
-  if (isStaticGithubPages) {
-    shellNotice("GitHub Pages serves the marketing site only. Run Final Cog locally to use the TikTok account, queue, library, and uploads.");
-    document.getElementById("connect-top").hidden = true;
-    document.querySelectorAll("[data-view]").forEach(button => { button.disabled = true; });
-    view.innerHTML = `<div class="page-heading"><div><h1>Run the local workspace</h1><p>The interactive app needs the Node server, local SQLite database, and video folder.</p></div></div><div class="workflow-note"><strong>To continue.</strong> Start Final Cog on your computer with <span class="mono">npm start</span>, then open <a href="http://localhost:5000/app/">http://localhost:5000/app/</a>.</div><a class="button button-muted" href="../">Return to the marketing site</a>`;
-  } else {
-    refreshSession();
-    loadView();
+  async function initializeWorkspace() {
+    if (isStaticGithubPages) {
+      showLocalAccess("The GitHub Pages copy is static. Open Final Cog from its local Node server to use your library and account.");
+      return;
+    }
+    try {
+      await api("/api/session");
+      state.localAuthorized = true;
+      document.getElementById("local-access").hidden = true;
+      document.getElementById("app-shell").hidden = false;
+      await refreshSession();
+      await loadView();
+    } catch (error) {
+      showLocalAccess(error.status === 401
+        ? "Enter the local API token from .env to continue."
+        : error.message);
+    }
   }
+
+  initializeWorkspace();
 })();

@@ -30,7 +30,21 @@
     <symbol id="icon-video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="m10 9 5 3-5 3z"/></symbol>
     <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
   </svg>
-  <div class="app-shell">
+  <main class="local-access" id="local-access" hidden>
+    <section class="local-access-card">
+      <span class="section-kicker">LOCAL API / AUTHENTICATION REQUIRED</span>
+      <h1>Open your workspace.</h1>
+      <p>Enter the local API token from your private <code>.env</code> file. It stays in this browser request and is exchanged for an HttpOnly session cookie.</p>
+      <form id="local-access-form">
+        <label for="local-api-token">Final Cog API token</label>
+        <input id="local-api-token" name="token" type="password" autocomplete="off" required>
+        <button class="button button-accent" type="submit">Unlock workspace</button>
+        <p id="local-access-error" class="local-access-error" role="alert" hidden></p>
+      </form>
+      <p class="local-access-help">If this is not configured yet, set <code>FINALCOG_API_TOKEN</code> in <code>.env</code> to a random value with at least 32 characters, then restart the server.</p>
+    </section>
+  </main>
+  <div class="app-shell" id="app-shell" hidden>
     <aside class="sidebar" aria-label="Main navigation">
       <a href="#queue" class="brand" aria-label="Final Cog home">
         <span class="brand-mark gear-mark brand-gear" data-teeth="12"><svg viewBox="0 0 48 48" aria-hidden="true"><g data-cog data-teeth="12"><use href="../assets/gear-system.svg#gear-12"/></g></svg><span class="gear-hub"></span></span>
