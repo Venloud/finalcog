@@ -86,9 +86,10 @@
       return;
     }
     const items = queueSort(state.queue);
-    view.innerHTML = `${queueHeading()}<div class="queue-list">${items.map(queueRow).join("")}</div>`;
+    const nextPostId = items.find(item => item.status === "Queued")?.id;
+    view.innerHTML = `${queueHeading()}<div class="queue-list">${items.map(item => queueRow(item, item.id === nextPostId)).join("")}</div>`;
   }
-  function queueRow(item) {
+  function queueRow(item, isNextPost = false) {
     const status = String(item.status || "Queued");
     const statusClass = status.toLowerCase().replaceAll(" ", "-");
     const id = esc(item.id);
@@ -103,7 +104,7 @@
     return `<article class="queue-row">
       <div class="media-tile">${icon("video")}</div>
       <div class="row-main"><div class="row-title">${esc(item.filename || "Video")}</div><div class="row-caption">${esc(item.caption || "No caption yet")}${item.hashtags ? ` ${esc(item.hashtags)}` : ""}</div>${item.errorReason ? `<div class="row-meta">${esc(item.errorReason)}</div>` : ""}</div>
-      <div><div class="row-meta">${esc(fmtDate(item.scheduledAt))}</div><div class="row-status status-${esc(statusClass)}"><span class="status-mark"></span>${esc(status)}</div></div>
+      <div><div class="row-meta">${isNextPost ? '<span class="next-post-mark">NEXT</span>' : ""}${esc(fmtDate(item.scheduledAt))}</div><div class="row-status status-${esc(statusClass)}"><span class="status-mark"></span>${esc(status)}</div></div>
       <div class="row-actions">${actions.join("")}</div>
     </article>`;
   }

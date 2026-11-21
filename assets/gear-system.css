@@ -2,8 +2,12 @@
   --schematic-ink: #101417;
   --schematic-paper: #f1f3f4;
   --schematic-accent: #25f4ee;
+  --schematic-amber: #ffb020;
   --schematic-line: #f1f3f41a;
   --schematic-grid-step: 80px;
+  --font-heading: "Archivo", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", Arial, sans-serif;
+  --font-meta: "IBM Plex Mono", monospace;
 }
 
 body {
@@ -22,9 +26,6 @@ body {
   flex: none;
   color: var(--schematic-paper);
   transform-origin: center;
-}
-.gear-mark[data-cog] {
-  transform: rotate(var(--cog-angle, 0deg));
 }
 .gear-mark > svg {
   display: block;
@@ -74,7 +75,7 @@ body {
   width: 144px;
   pointer-events: none;
   color: var(--schematic-paper);
-  opacity: .55;
+  opacity: 1;
 }
 .site-gear-rail::before,
 .site-gear-rail::after {
@@ -97,6 +98,7 @@ body {
 .rail-station .gear-mark {
   position: absolute;
   top: 30px;
+  opacity: .35;
 }
 .rail-station .gear-mark[data-teeth="12"] { left: 0; }
 .rail-station .gear-mark[data-teeth="24"] { left: 48px; }
@@ -128,7 +130,7 @@ body {
   border-top: 1px solid #f1f3f450;
   text-align: center;
   color: #aab3b8;
-  font: 8px/1.1 "Space Grotesk", sans-serif;
+  font: 12px/1.2 var(--font-meta);
   letter-spacing: .04em;
 }
 .rail-dimension::before,
@@ -141,17 +143,17 @@ body {
 }
 .rail-dimension::before { left: 0; }
 .rail-dimension::after { right: 0; }
-.rail-dimension span { position: relative; top: -13px; padding: 0 4px; background: var(--schematic-ink); }
+.rail-dimension span { position: relative; top: -13px; padding: 0 4px; background: var(--schematic-ink); color: var(--schematic-amber); }
 .rail-label {
   position: absolute;
   left: 0;
   bottom: 0;
   color: #aab3b8;
-  font: 8px/1.2 "Space Grotesk", sans-serif;
+  font: 12px/1.4 var(--font-meta);
   letter-spacing: .08em;
   white-space: nowrap;
 }
-.rail-label::before { content: "+"; margin-right: 5px; color: var(--schematic-accent); }
+.rail-label::before { content: "+"; margin-right: 5px; color: var(--schematic-paper); }
 .site-gear-rail [data-cog]::after { display: none; }
 .site-gear-rail [data-cog] svg { position: relative; z-index: 1; }
 
@@ -188,7 +190,4 @@ body {
 
 @media (max-width: 1100px) {
   .site-gear-rail { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .gear-mark[data-cog] { transform: none !important; }
 }

@@ -17,7 +17,7 @@
       const phase = Number(gear.dataset.phase || 0);
       if (!Number.isFinite(teeth) || teeth <= 0) continue;
       const angle = isReduced ? 0 : scroll * 0.12 * (12 / teeth) * direction + phase;
-      gear.style.setProperty("--cog-angle", `${angle}deg`);
+      gear.style.transform = `rotate(${angle}deg)`;
     }
 
     for (const station of stations) {
