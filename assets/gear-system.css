@@ -1,8 +1,18 @@
 :root {
   --schematic-ink: #101417;
   --schematic-paper: #f1f3f4;
-  --schematic-accent: #25f4ee;
-  --schematic-amber: #ffb020;
+  --haiti-blue: #00209f;
+  --haiti-red: #d21034;
+  --blue-tint: #6e86ff;
+  --red-tint: #ff4d6a;
+  --gold: #f1b517;
+  --palm-green: #016a16;
+  --green-tint: #50d276;
+  --accent-line: var(--blue-tint);
+  --danger-line: var(--red-tint);
+  --schematic-accent: var(--haiti-blue);
+  --schematic-red: var(--haiti-red);
+  --schematic-gold: var(--gold);
   --schematic-grid-minor: #f1f3f409;
   --schematic-grid-major: #f1f3f40e;
   --font-heading: "Archivo", Arial, sans-serif;
@@ -59,6 +69,7 @@ body {
   height: 4px;
   border-radius: 50%;
   background: var(--schematic-accent);
+  border: 1px solid var(--schematic-paper);
 }
 .gear-mark[data-teeth]::after {
   content: "";
@@ -155,7 +166,7 @@ body {
 }
 .rail-dimension::before { left: 0; }
 .rail-dimension::after { right: 0; }
-.rail-dimension span { position: relative; top: -13px; padding: 0 4px; background: var(--schematic-ink); color: var(--schematic-amber); }
+.rail-dimension span { position: relative; top: -13px; padding: 0 4px; background: var(--schematic-ink); color: var(--schematic-gold); }
 .rail-label {
   position: absolute;
   left: 0;
@@ -202,7 +213,7 @@ body {
   width: 144px;
   border-top: 1px solid #f1f3f44d;
   text-align: center;
-  color: var(--schematic-amber);
+  color: var(--schematic-gold);
   font: 500 13px/1.2 var(--font-meta);
 }
 .hero-dimension::before,
@@ -228,6 +239,7 @@ body {
   height: 4px;
   border-radius: 50%;
   background: var(--schematic-accent);
+  border: 1px solid var(--schematic-paper);
 }
 .topbar-machine,
 .empty-machine {
