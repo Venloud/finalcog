@@ -13,7 +13,7 @@
 
   const esc = (v = "") => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const icon = (name) => `<svg aria-hidden="true"><use href="#icon-${name}"/></svg>`;
-  const emptyMachine = () => `<div class="empty-machine" aria-hidden="true"><span class="gear-mark compact" data-cog data-teeth="6" data-direction="-1" data-phase="30"><svg viewBox="0 0 24 24"><use href="../assets/gear-system.svg#gear-6"/></svg></span><span class="gear-mark compact" data-cog data-teeth="12"><svg viewBox="0 0 48 48"><use href="../assets/gear-system.svg#gear-12"/></svg></span></div>`;
+  const emptyMachine = () => `<div class="empty-machine" aria-hidden="true"><span class="gear-mark compact" data-teeth="6"><svg viewBox="0 0 24 24"><g data-cog data-teeth="6" data-direction="-1" data-phase="30"><use href="../assets/gear-system.svg#gear-6"/></g></svg></span><span class="gear-mark compact" data-teeth="12"><svg viewBox="0 0 48 48"><g data-cog data-teeth="12"><use href="../assets/gear-system.svg#gear-12"/></g></svg></span></div>`;
   const fmtDate = value => value ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)) : "Unscheduled";
   const fileSize = n => n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / (1024 * 1024)).toFixed(1)} MB`;
   const titleCase = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, m => m.toUpperCase());

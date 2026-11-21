@@ -94,6 +94,10 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
     assert.equal((await call('/privacy.html')).status, 200);
     assert.equal((await call('/terms.html')).status, 200);
     assert.equal((await call('/tiktok-callback.html')).status, 200);
+    assert.equal((await call('/assets/fonts.css')).status, 200);
+    const localFont = await call('/assets/fonts/archivo-expanded-latin.woff2');
+    assert.equal(localFont.status, 200);
+    assert.equal(localFont.headers.get('content-type'), 'font/woff2');
     assert.equal((await call('/app', { redirect: 'manual' })).status, 302);
     assert.equal((await call('/app/')).status, 200);
     assert.equal((await call('/.env')).status, 404);
