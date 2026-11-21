@@ -1,0 +1,404 @@
+(() => {
+  "use strict";
+
+  const view = document.getElementById("view");
+  const dialog = document.getElementById("dialog");
+  const dialogContent = document.getElementById("dialog-content");
+  const notice = document.getElementById("server-notice");
+  const isStaticGithubPages = location.hostname.endsWith("github.io");
+  const pages = { queue: "Queue", calendar: "Calendar", library: "Library", accounts: "Accounts", settings: "Settings" };
+  const state = { activeView: "queue", session: null, queue: [], library: [], settings: null, accounts: null, month: new Date(), busy: false };
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const fullDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  let cogFrameQueued = false;
+
+  function updateBrandCog() {
+    cogFrameQueued = false;
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const angle = reducedMotion ? 0 : Math.max(0, window.scrollY) * 0.12;
+    document.documentElement.style.setProperty("--angle", `${angle}deg`);
+  }
+  function requestBrandCogUpdate() {
+    if (cogFrameQueued) return;
+    cogFrameQueued = true;
+    requestAnimationFrame(updateBrandCog);
+  }
+  window.addEventListener("scroll", requestBrandCogUpdate, { passive: true });
+  window.addEventListener("pageshow", requestBrandCogUpdate);
+  window.addEventListener("resize", requestBrandCogUpdate, { passive: true });
+  matchMedia("(prefers-reduced-motion: reduce)").addEventListener?.("change", requestBrandCogUpdate);
+  updateBrandCog();
+
+  const esc = (v = "") => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const icon = (name) => `<svg aria-hidden="true"><use href="#icon-${name}"/></svg>`;
+  const fmtDate = value => value ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)) : "Unscheduled";
+  const fileSize = n => n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  const titleCase = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, m => m.toUpperCase());
+  const queueSort = items => [...items].sort((a, b) => new Date(a.scheduledAt || 8640000000000000) - new Date(b.scheduledAt || 8640000000000000));
+
+  async function api(path, options = {}) {
+    const init = { method: options.method || "GET", headers: {}, credentials: "same-origin" };
+    if (options.body instanceof FormData) init.body = options.body;
+    else if (options.body !== undefined) { init.headers["Content-Type"] = "application/json"; init.body = JSON.stringify(options.body); }
+    const response = await fetch(path, init);
+    const text = await response.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    if (!response.ok) throw new Error(data?.error || data?.message || `Request failed (${response.status})`);
+    return data;
+  }
+
+  function showToast(message, error = false) {
+    const node = document.createElement("div");
+    node.className = `toast${error ? " error" : ""}`;
+    node.textContent = message;
+    document.getElementById("toast-region").append(node);
+    setTimeout(() => node.remove(), 4200);
+  }
+  function setBusy(element, busy, label = "Working…") {
+    if (!element) return;
+    if (busy) { element.dataset.originalLabel = element.textContent.trim(); element.disabled = true; element.textContent = label; }
+    else { element.disabled = false; if (element.dataset.originalLabel) element.textContent = element.dataset.originalLabel; }
+  }
+  function shellNotice(message) { notice.hidden = !message; notice.textContent = message || ""; }
+  function showError(message, retry) {
+    return `<div class="error-panel"><div><strong>Could not load this view.</strong><p>${esc(message)}</p></div><button class="button button-small" data-action="reload-view">Try again</button></div>`;
+  }
+  function renderLoading() { view.innerHTML = `<div class="page-heading"><div><h1>${esc(pages[state.activeView])}</h1></div></div><div aria-label="Loading"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>`; }
+  function setActive(viewName) {
+    state.activeView = viewName;
+    document.getElementById("page-title").textContent = pages[viewName];
+    document.querySelectorAll("[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === viewName));
+    document.querySelector(".sidebar").classList.remove("open");
+    document.getElementById("mobile-menu").setAttribute("aria-expanded", "false");
+    loadView();
+  }
+  async function loadView() {
+    renderLoading();
+    try {
+      if (state.activeView === "queue") { state.queue = await api("/api/queue"); renderQueue(); }
+      else if (state.activeView === "calendar") { state.queue = await api(`/api/calendar?month=${state.month.getFullYear()}-${String(state.month.getMonth() + 1).padStart(2, "0")}`); renderCalendar(); }
+      else if (state.activeView === "library") { state.library = await api("/api/library"); renderLibrary(); }
+      else if (state.activeView === "accounts") { state.accounts = await api("/api/accounts"); renderAccounts(); }
+      else if (state.activeView === "settings") { state.settings = await api("/api/settings"); renderSettings(); }
+    } catch (error) {
+      const staticNotice = location.hostname.endsWith("github.io")
+        ? "Final Cog needs the local Node server. GitHub Pages serves only static files and cannot load your account, queue, or uploads. Start the local Node app to use this workspace."
+        : "";
+      if (staticNotice) shellNotice(staticNotice);
+      view.innerHTML = `<div class="page-heading"><div><h1>${esc(pages[state.activeView])}</h1></div></div>${showError(error.message)}`;
+    }
+  }
+  function queueHeading() {
+    const scheduled = state.queue.filter(x => ["Queued", "Sending"].includes(x.status)).length;
+    return `<div class="page-heading"><div><h1>Your queue</h1><p>A paced line of finished videos, ready for TikTok inbox drafts.</p></div><div class="page-actions"><button class="button button-muted" data-action="open-schedule">${icon("calendar")}<span>Schedule a video</span></button><button class="button button-accent" data-action="go-library">${icon("plus")}<span>Add videos</span></button></div></div>
+      <div class="workflow-note"><strong>How publishing works.</strong> Final Cog sends scheduled videos to your TikTok inbox drafts. Captions are saved here; copy and paste them into TikTok while reviewing. Nothing is publicly auto-posted.</div>
+      <div class="list-heading"><span>${scheduled ? `${scheduled} IN THE UPCOMING QUEUE` : "UPCOMING QUEUE"}</span><span>STATUS / ACTIONS</span></div>`;
+  }
+  function renderQueue() {
+    const count = state.queue.filter(x => ["Queued", "Sending"].includes(x.status)).length;
+    const badge = document.getElementById("queue-count"); badge.textContent = count; badge.hidden = !count;
+    if (!state.queue.length) {
+      view.innerHTML = `${queueHeading()}<div class="empty-state"><div class="empty-mark">${icon("queue")}</div><h2>Nothing in the queue yet</h2><p>Upload finished videos to your library, add a caption, then choose when each one should move to your TikTok inbox drafts.</p><button class="button button-accent" data-action="go-library">${icon("upload")}<span>Upload videos</span></button></div>`;
+      return;
+    }
+    const items = queueSort(state.queue);
+    view.innerHTML = `${queueHeading()}<div class="queue-list">${items.map(queueRow).join("")}</div>`;
+  }
+  function queueRow(item) {
+    const status = String(item.status || "Queued");
+    const statusClass = status.toLowerCase().replaceAll(" ", "-");
+    const id = esc(item.id);
+    const retry = status === "Failed" && item.retryAllowed === true && !/flag|policy|violation/i.test(item.errorReason || "");
+    const actions = [];
+    if (item.caption || item.hashtags) actions.push(`<button class="text-action" data-action="copy-caption" data-id="${id}">Copy caption</button>`);
+    if (["Queued", "Failed"].includes(status)) actions.push(`<button class="text-action" data-action="edit-queue" data-id="${id}">Edit</button>`);
+    if (status === "Queued") actions.push(`<button class="text-action" data-action="send-now" data-id="${id}">Send now</button>`);
+    if (retry) actions.push(`<button class="text-action" data-action="retry" data-id="${id}">Retry</button>`);
+    if (status === "Sent to drafts") actions.push(`<button class="text-action" data-action="mark-posted" data-id="${id}">Mark posted</button>`);
+    if (["Queued", "Failed", "Needs review"].includes(status)) actions.push(`<button class="text-action" data-action="delete-queue" data-id="${id}">Remove</button>`);
+    return `<article class="queue-row">
+      <div class="media-tile">${icon("video")}</div>
+      <div class="row-main"><div class="row-title">${esc(item.filename || "Video")}</div><div class="row-caption">${esc(item.caption || "No caption yet")}${item.hashtags ? ` ${esc(item.hashtags)}` : ""}</div>${item.errorReason ? `<div class="row-meta">${esc(item.errorReason)}</div>` : ""}</div>
+      <div><div class="row-meta">${esc(fmtDate(item.scheduledAt))}</div><div class="row-status status-${esc(statusClass)}"><span class="status-mark"></span>${esc(status)}</div></div>
+      <div class="row-actions">${actions.join("")}</div>
+    </article>`;
+  }
+  function renderCalendar() {
+    const month = state.month;
+    const monthLabel = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(month);
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const start = new Date(first); start.setDate(1 - first.getDay());
+    const events = new Map();
+    state.queue.forEach(item => {
+      if (!item.scheduledAt) return;
+      const key = new Date(item.scheduledAt).toLocaleDateString("en-CA");
+      if (!events.has(key)) events.set(key, []);
+      events.get(key).push(item);
+    });
+    const weekday = dayNames.map(d => `<div class="calendar-weekday">${d}</div>`).join("");
+    const cells = Array.from({ length: 42 }, (_, i) => {
+      const date = new Date(start); date.setDate(start.getDate() + i);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const today = new Date().toDateString() === date.toDateString();
+      const dayItems = events.get(key) || [];
+      return `<div class="calendar-day${date.getMonth() !== month.getMonth() ? " outside" : ""}"><div class="day-number${today ? " today" : ""}">${date.getDate()}</div>${dayItems.map(item => `<div class="calendar-event${item.status === "Failed" ? " failed" : ""}" title="${esc(item.filename)}">${esc(item.filename || "Video")}<div class="event-time">${esc(new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(item.scheduledAt)))}</div></div>`).join("")}</div>`;
+    }).join("");
+    view.innerHTML = `<div class="page-heading"><div><h1>Calendar</h1><p>See where each video lands in your posting rhythm.</p></div><div class="calendar-toolbar"><button class="button button-small" data-action="month-prev" aria-label="Previous month">‹</button><h2>${esc(monthLabel)}</h2><button class="button button-small" data-action="month-next" aria-label="Next month">›</button><button class="button button-small button-muted" data-action="month-today">Today</button></div></div>
+      <div class="workflow-note">Scheduled times are for sending to TikTok inbox drafts, not public auto-posting.</div><div class="calendar-grid">${weekday}${cells}</div>`;
+  }
+  function renderLibrary() {
+    view.innerHTML = `<div class="page-heading"><div><h1>Video library</h1><p>Keep finished videos together. Add the words and tags you want to use when they're queued.</p></div></div>
+      <div class="upload-zone" id="upload-zone"><div class="upload-symbol">${icon("upload")}</div><div class="upload-copy"><strong>Drop finished videos here</strong><span>Choose one or more video files to upload to your library.</span></div><input type="file" id="file-input" accept="video/*" multiple hidden><button class="button button-accent" data-action="pick-files">Choose files</button></div>
+      <div class="library-toolbar"><p>${state.library.length ? `${state.library.length} ${state.library.length === 1 ? "video" : "videos"} in your library` : "Your uploaded videos will appear here."}</p><span class="section-kicker">CAPTION / HASHTAGS CAN BE EDITED ANYTIME</span></div>
+      ${state.library.length ? `<div class="library-list">${state.library.map(libraryItem).join("")}</div>` : `<div class="empty-state"><div class="empty-mark">${icon("library")}</div><h2>Your library is clear</h2><p>Start with finished, export-ready videos. Each upload stays here until you schedule it or remove it.</p></div>`}
+      <div class="workflow-note">Uploads are sent to TikTok inbox drafts when scheduled. You finish the publishing steps inside TikTok.</div>`;
+    const zone = document.getElementById("upload-zone");
+    ["dragenter", "dragover"].forEach(type => zone.addEventListener(type, event => {
+      event.preventDefault();
+      zone.classList.add("dragover");
+    }));
+    ["dragleave", "drop"].forEach(type => zone.addEventListener(type, event => {
+      event.preventDefault();
+      zone.classList.remove("dragover");
+      if (type === "drop") uploadFiles(event.dataTransfer.files);
+    }));
+  }
+  function libraryItem(item) {
+    const variants = item.captionVariants && typeof item.captionVariants === "object" ? item.captionVariants : {};
+    return `<article class="library-item" data-library-id="${esc(item.id)}">
+      <div class="file-cover">${icon("video")}</div>
+      <div class="library-file">${esc(item.filename)}<small>${esc(fileSize(item.size || 0))} · ${esc(item.mimeType || "Video")}</small></div>
+      <div class="library-edit">
+        <label for="caption-${esc(item.id)}">TikTok caption</label>
+        <textarea id="caption-${esc(item.id)}" class="field-control caption-input" rows="2" aria-label="TikTok caption for ${esc(item.filename)}" placeholder="Write a caption">${esc(item.caption || variants.tiktok || "")}</textarea>
+        <label for="hashtags-${esc(item.id)}">Hashtags</label>
+        <input id="hashtags-${esc(item.id)}" class="field-control hashtags-input" aria-label="Hashtags for ${esc(item.filename)}" placeholder="#hashtags" value="${esc(item.hashtags || "")}">
+        <details class="variants-details"><summary>Save other platform captions</summary><div class="variant-fields">
+          <label for="instagram-${esc(item.id)}">Instagram Reels · saved for later</label>
+          <textarea id="instagram-${esc(item.id)}" class="field-control variant-input" data-platform="instagram" rows="2" maxlength="2200" placeholder="Optional Instagram caption">${esc(variants.instagram || "")}</textarea>
+          <label for="youtube-${esc(item.id)}">YouTube Shorts · saved for later</label>
+          <textarea id="youtube-${esc(item.id)}" class="field-control variant-input" data-platform="youtube" rows="2" maxlength="2200" placeholder="Optional YouTube caption">${esc(variants.youtube || "")}</textarea>
+          <span class="section-kicker">OTHER PLATFORM CAPTIONS ARE SAVED LOCALLY ONLY.</span>
+        </div></details>
+      </div>
+      <div class="library-tools"><button class="text-action" data-action="save-library" data-id="${esc(item.id)}">Save</button><button class="text-action" data-action="schedule-library" data-id="${esc(item.id)}">Schedule</button><button class="text-action" data-action="delete-library" data-id="${esc(item.id)}">Remove</button></div>
+    </article>`;
+  }
+  function renderAccounts() {
+    const t = state.accounts?.tiktok;
+    const avatar = t?.avatarUrl ? `<img src="${esc(t.avatarUrl)}" alt="">` : esc((t?.displayName || "T").trim().charAt(0).toUpperCase());
+    view.innerHTML = `<div class="page-heading"><div><h1>Accounts</h1><p>Connect the channel that receives your finished videos.</p></div></div>
+      <div class="account-layout"><section><div class="section-kicker">ACTIVE INTEGRATION</div>
+        ${t ? `<div class="connected-block"><div class="account-avatar">${avatar}</div><div><h3>${esc(t.displayName || "TikTok account")}</h3><p>${t.username ? `@${esc(t.username)} · ` : ""}Connected ${esc(fmtDate(t.connectedAt))}</p></div><div class="account-actions"><button class="button button-small button-plain" data-action="logout">Sign out</button><button class="button button-small button-plain" data-action="disconnect">Disconnect</button></div></div>` : `<div class="connected-block"><div class="account-avatar" aria-hidden="true">T</div><div><h3>TikTok</h3><p>Not connected yet</p></div><a href="/auth/tiktok/start" class="button button-small button-accent" style="margin-left:auto">Sign in with TikTok</a></div>`}
+        <div class="integration-list"><div class="integration-row"><span class="integration-name">TikTok</span><span class="integration-status ${t ? "active" : ""}">${t ? "Connected" : "Ready to connect"}</span></div>
+          <div class="integration-row"><span class="integration-name">YouTube Shorts</span><span class="integration-status">Coming soon</span></div>
+          <div class="integration-row"><span class="integration-name">Instagram Reels</span><span class="integration-status">Coming soon</span></div>
+          <div class="integration-row"><span class="integration-name">Twitch</span><span class="integration-status">Coming later</span></div></div>
+      </section><aside class="side-explainer"><strong>Your final step stays yours.</strong>Final Cog places videos in your TikTok inbox drafts. Review the draft, add any finishing touches, and publish from TikTok when you're ready.<p>No public auto-posting is performed by this app.</p></aside></div>`;
+  }
+  function renderSettings() {
+    const s = state.settings;
+    const days = (s.activeDays || []).map(Number);
+    const times = s.preferredTimes?.length ? s.preferredTimes : [""];
+    view.innerHTML = `<div class="page-heading"><div><h1>Posting cadence</h1><p>Set the pace you want to keep. Fill the queue when you're ready to use these preferences.</p></div></div>
+      <form id="settings-form" class="settings-form">
+        <section class="settings-section"><div><h2>Weekly pace</h2><p class="section-desc">How many videos to schedule in a typical week.</p></div><div class="settings-controls"><div class="form-field"><label for="posts-per-week">Videos per week</label><input class="field-control" type="number" id="posts-per-week" min="1" max="21" value="${esc(s.postsPerWeek ?? 3)}" required></div></div></section>
+        <section class="settings-section"><div><h2>Active days</h2><p class="section-desc">Choose the days you want videos sent to drafts.</p></div><div class="settings-controls"><div class="days-list">${dayNames.map((d, i) => `<label class="day-option"><input type="checkbox" name="activeDays" value="${i}" ${days.includes(i) ? "checked" : ""}><span>${d}</span></label>`).join("")}</div></div></section>
+        <section class="settings-section"><div><h2>Preferred times</h2><p class="section-desc">Local times for your selected days.</p></div><div class="settings-controls"><div class="times-list" id="times-list">${times.map((t, i) => `<div class="time-entry"><input class="field-control preferred-time" type="time" value="${esc(t)}" aria-label="Preferred time ${i + 1}"><button type="button" class="remove-time" data-action="remove-time" aria-label="Remove preferred time">−</button></div>`).join("")}</div><button type="button" class="text-action" data-action="add-time">Add a time</button></div></section>
+        <section class="settings-section"><div><h2>Spacing</h2><p class="section-desc">Minimum hours between scheduled TikTok inbox uploads.</p></div><div class="settings-controls"><div class="form-field"><label for="spacing">Minimum spacing</label><input class="field-control" type="number" id="spacing" min="3" max="168" value="${esc(s.minSpacingHours ?? 3)}" required></div><div class="form-field"><label for="timezone">Timezone</label><select class="field-control" id="timezone">${timezoneOptions(s.timezone)}</select></div></div></section>
+        <div class="settings-bottom"><button type="submit" class="button button-accent">Save cadence</button><button type="button" class="button button-muted" data-action="fill-schedule">Fill queue from library</button><span class="settings-message" id="settings-message" role="status"></span></div>
+      </form>`;
+  }
+  function timezoneOptions(selected) {
+    let names;
+    try { names = Intl.supportedValuesOf("timeZone"); } catch { names = ["UTC", "America/Los_Angeles", "America/New_York", "Europe/London"]; }
+    if (selected && !names.includes(selected)) names.unshift(selected);
+    const current = selected || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return names.map(n => `<option value="${esc(n)}" ${n === current ? "selected" : ""}>${esc(n.replaceAll("_", " "))}</option>`).join("");
+  }
+
+  function openDialog(markup) { dialogContent.innerHTML = markup; dialog.showModal(); }
+  function closeDialog() { if (dialog.open) dialog.close(); }
+  function findQueue(id) { return state.queue.find(item => String(item.id) === String(id)); }
+  function findLibrary(id) { return state.library.find(item => String(item.id) === String(id)); }
+  function openSchedule(item) {
+    const editing = !!item?.id;
+    const videos = state.library;
+    openDialog(`<h2>${editing ? "Edit scheduled video" : "Schedule a video"}</h2><p class="dialog-intro">Choose a finished video and when it should be sent to your TikTok inbox drafts. You'll publish inside TikTok.</p>
+      <form id="schedule-form" data-edit-id="${editing ? esc(item.id) : ""}"><div class="dialog-fields">
+        ${editing ? `<input type="hidden" name="mediaId" value="${esc(item.mediaId || "")}"><div class="form-field"><label>Video</label><div class="field-control">${esc(item.filename || "Selected video")}</div></div>` : `<div class="form-field"><label for="schedule-media">Video</label><select class="field-control" id="schedule-media" name="mediaId" required>${videos.map(v => `<option value="${esc(v.id)}">${esc(v.filename)}</option>`).join("")}</select></div>`}
+        <div class="form-field"><label for="schedule-caption">Caption</label><textarea class="field-control" id="schedule-caption" name="caption" rows="3">${esc(item?.caption || (!editing ? (videos[0]?.caption || "") : ""))}</textarea></div>
+        <div class="form-field"><label for="schedule-hashtags">Hashtags</label><input class="field-control" id="schedule-hashtags" name="hashtags" value="${esc(item?.hashtags || (!editing ? (videos[0]?.hashtags || "") : ""))}" placeholder="#yourtags"></div>
+        <div class="form-field"><label for="schedule-at">Send to drafts at</label><input class="field-control" id="schedule-at" name="scheduledAt" type="datetime-local" value="${esc(item?.scheduledAt ? toLocalInput(item.scheduledAt) : "")}" required></div></div>
+        <div class="dialog-actions"><button type="button" class="button button-small" data-action="close-dialog">Cancel</button><button type="submit" class="button button-accent">${editing ? "Save changes" : "Add to queue"}</button></div></form>`);
+  }
+  function toLocalInput(value) { const d = new Date(value); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
+
+  async function refreshCurrent() { await loadView(); await refreshSession(); }
+  async function refreshSession() {
+    try {
+      state.session = await api("/api/session");
+      const account = state.session?.account;
+      const chip = document.getElementById("account-chip");
+      const label = account ? (account.displayName || `@${account.username}`) : "Not connected";
+      chip.innerHTML = `<span class="account-dot"></span><span>${esc(label)}</span>`;
+      chip.classList.toggle("connected", !!state.session?.authenticated);
+      document.getElementById("channel-state").textContent = account ? "Connected" : "Not connected";
+      document.getElementById("connect-top").hidden = !!account;
+      if (isStaticGithubPages) {
+        shellNotice("GitHub Pages serves the marketing site only. Run Final Cog locally to use your TikTok account, queue, library, and uploads.");
+      } else if (!state.session?.configured) {
+        shellNotice("TikTok sign-in is not configured yet. Copy .env.example to .env, add your local TikTok keys and session secret, then restart Final Cog.");
+      } else {
+        shellNotice("");
+      }
+    } catch {
+      if (isStaticGithubPages) {
+        shellNotice("GitHub Pages serves the marketing site only. Run Final Cog locally to use your TikTok account, queue, library, and uploads.");
+      }
+    }
+  }
+  function inputValuesFromSchedule(form) {
+    return { mediaId: form.elements.mediaId.value, caption: form.elements.caption.value.trim(), hashtags: form.elements.hashtags.value.trim(), scheduledAt: new Date(form.elements.scheduledAt.value).toISOString() };
+  }
+  async function uploadFiles(files) {
+    if (!files.length) return;
+    const form = new FormData();
+    [...files].forEach(file => form.append("files", file));
+    try { const result = await api("/api/library", { method: "POST", body: form }); state.library = [...(result.items || []), ...state.library]; showToast(`${result.items?.length || files.length} video${files.length === 1 ? "" : "s"} uploaded`); renderLibrary(); }
+    catch (error) { showToast(`Upload failed: ${error.message}`, true); }
+  }
+  function confirmAction(message, callback) {
+    openDialog(`<h2>Confirm this change</h2><p class="dialog-intro">${esc(message)}</p><div class="dialog-actions"><button class="button button-small" data-action="close-dialog">Cancel</button><button class="button button-danger" data-action="confirm-action">Continue</button></div>`);
+    dialogContent.querySelector('[data-action="confirm-action"]').onclick = async () => { closeDialog(); await callback(); };
+  }
+
+  document.addEventListener("click", async event => {
+    const authLink = event.target.closest('a[href="/auth/tiktok/start"]');
+    if (authLink && (isStaticGithubPages || state.session?.configured === false)) {
+      event.preventDefault();
+      showToast(isStaticGithubPages ? "Run the local Node app to connect TikTok." : "Add TikTok values to your local .env file first.", true);
+      return;
+    }
+    const nav = event.target.closest("[data-view]");
+    if (nav) { setActive(nav.dataset.view); return; }
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+    const action = button.dataset.action;
+    const id = button.dataset.id;
+    try {
+      if (action === "reload-view") await loadView();
+      else if (action === "go-library") setActive("library");
+      else if (action === "open-schedule") {
+        if (!state.library.length) { await api("/api/library").then(data => state.library = data); }
+        if (!state.library.length) { showToast("Upload a video to your library before scheduling.", true); setActive("library"); return; }
+        openSchedule();
+      } else if (action === "close-dialog") closeDialog();
+      else if (action === "pick-files") document.getElementById("file-input").click();
+      else if (action === "edit-queue") openSchedule(findQueue(id));
+      else if (action === "send-now") {
+        setBusy(button, true, "Queuing…"); await api(`/api/queue/${encodeURIComponent(id)}/send-now`, { method: "POST" }); showToast("Queued for immediate TikTok draft upload."); await refreshCurrent();
+      } else if (action === "retry") {
+        const item = findQueue(id);
+        if (!item?.retryAllowed || /flag|policy|violation/i.test(item.errorReason || "")) { showToast("This item is not eligible to retry.", true); return; }
+        setBusy(button, true, "Queuing…"); await api(`/api/queue/${encodeURIComponent(id)}/retry`, { method: "POST" }); showToast("Eligible retry queued."); await refreshCurrent();
+      } else if (action === "mark-posted") {
+        await api(`/api/queue/${encodeURIComponent(id)}/mark-posted`, { method: "POST" }); showToast("Marked as posted."); await refreshCurrent();
+      } else if (action === "copy-caption") {
+        const item = findQueue(id);
+        const caption = [item?.caption, item?.hashtags].filter(Boolean).join(" ").trim();
+        if (!caption) { showToast("This video has no saved caption.", true); return; }
+        await navigator.clipboard.writeText(caption);
+        showToast("Caption copied. Paste it into TikTok.");
+      } else if (action === "delete-queue") {
+        confirmAction("Remove this video from the queue? The original file stays in your library.", async () => { await api(`/api/queue/${encodeURIComponent(id)}`, { method: "DELETE" }); showToast("Removed from queue."); await refreshCurrent(); });
+      } else if (action === "save-library") {
+        const row = button.closest(".library-item");
+        const caption = row.querySelector(".caption-input").value;
+        const captionVariants = { tiktok: caption };
+        row.querySelectorAll(".variant-input").forEach(input => { captionVariants[input.dataset.platform] = input.value; });
+        const item = await api(`/api/library/${encodeURIComponent(id)}`, { method: "PATCH", body: { caption, hashtags: row.querySelector(".hashtags-input").value, captionVariants } });
+        state.library = state.library.map(v => String(v.id) === String(id) ? item : v); showToast("Video details saved.");
+      } else if (action === "schedule-library") {
+        const item = findLibrary(id); openSchedule({ mediaId: item.id, filename: item.filename, caption: item.caption, hashtags: item.hashtags });
+      } else if (action === "delete-library") {
+        confirmAction("Remove this video, its saved captions, and its queue history from this local app?", async () => { await api(`/api/library/${encodeURIComponent(id)}`, { method: "DELETE" }); state.library = state.library.filter(x => String(x.id) !== String(id)); renderLibrary(); showToast("Video removed."); });
+      } else if (action === "month-prev" || action === "month-next") {
+        state.month = new Date(state.month.getFullYear(), state.month.getMonth() + (action === "month-prev" ? -1 : 1), 1); await loadView();
+      } else if (action === "month-today") { state.month = new Date(); await loadView(); }
+      else if (action === "logout") { await api("/api/auth/logout", { method: "POST" }); showToast("Signed out."); await refreshSession(); await loadView(); }
+      else if (action === "disconnect") {
+        confirmAction("Disconnect TikTok and remove its saved authorization tokens? Your local videos and queue will stay.", async () => {
+          await api("/api/accounts/disconnect", { method: "POST" });
+          showToast("TikTok disconnected.");
+          await refreshSession();
+          await loadView();
+        });
+      }
+      else if (action === "add-time") {
+        document.getElementById("times-list").insertAdjacentHTML("beforeend", `<div class="time-entry"><input class="field-control preferred-time" type="time" aria-label="Preferred time"><button type="button" class="remove-time" data-action="remove-time" aria-label="Remove preferred time">−</button></div>`);
+      } else if (action === "remove-time") {
+        const entries = document.querySelectorAll(".time-entry");
+        if (entries.length <= 1) entries[0].querySelector("input").value = "";
+        else button.closest(".time-entry").remove();
+      } else if (action === "fill-schedule") {
+        setBusy(button, true, "Filling…");
+        const result = await api("/api/schedule/fill", { method: "POST" });
+        showToast(`${result.created?.length || 0} video${result.created?.length === 1 ? "" : "s"} added to queue.`);
+        await loadView();
+      }
+    } catch (error) { showToast(error.message, true); if (["send-now", "retry"].includes(action)) await loadView(); }
+  });
+
+  document.addEventListener("submit", async event => {
+    if (event.target.id === "schedule-form") {
+      event.preventDefault();
+      const form = event.target;
+      try {
+        const values = inputValuesFromSchedule(form);
+        if (form.dataset.editId) await api(`/api/queue/${encodeURIComponent(form.dataset.editId)}`, { method: "PATCH", body: { scheduledAt: values.scheduledAt, caption: values.caption, hashtags: values.hashtags } });
+        else await api("/api/queue", { method: "POST", body: values });
+        closeDialog(); showToast(form.dataset.editId ? "Schedule updated." : "Added to queue."); await refreshCurrent();
+      } catch (error) { showToast(error.message, true); }
+    }
+    if (event.target.id === "settings-form") {
+      event.preventDefault();
+      const form = event.target;
+      const body = { timezone: form.elements.timezone.value, postsPerWeek: Number(form.elements["posts-per-week"].value), activeDays: [...form.querySelectorAll('input[name="activeDays"]:checked')].map(x => Number(x.value)), preferredTimes: [...form.querySelectorAll(".preferred-time")].map(x => x.value).filter(Boolean), minSpacingHours: Number(form.elements.spacing.value) };
+      try {
+        state.settings = await api("/api/settings", { method: "PUT", body });
+        document.getElementById("settings-message").textContent = "Cadence saved.";
+        showToast("Cadence saved.");
+      } catch (error) { document.getElementById("settings-message").textContent = error.message; }
+    }
+  });
+  document.addEventListener("change", event => {
+    if (event.target.id === "file-input") uploadFiles(event.target.files);
+    if (event.target.id === "schedule-media") {
+      const item = findLibrary(event.target.value);
+      if (item) { document.getElementById("schedule-caption").value = item.caption || ""; document.getElementById("schedule-hashtags").value = item.hashtags || ""; }
+    }
+  });
+  document.getElementById("mobile-menu").addEventListener("click", event => {
+    const open = !document.querySelector(".sidebar").classList.contains("open");
+    document.querySelector(".sidebar").classList.toggle("open", open);
+    event.currentTarget.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      document.querySelector(".sidebar").classList.remove("open");
+      document.getElementById("mobile-menu").setAttribute("aria-expanded", "false");
+    }
+  });
+
+  if (isStaticGithubPages) {
+    shellNotice("GitHub Pages serves the marketing site only. Run Final Cog locally to use the TikTok account, queue, library, and uploads.");
+    document.getElementById("connect-top").hidden = true;
+    document.querySelectorAll("[data-view]").forEach(button => { button.disabled = true; });
+    view.innerHTML = `<div class="page-heading"><div><h1>Run the local workspace</h1><p>The interactive app needs the Node server, local SQLite database, and video folder.</p></div></div><div class="workflow-note"><strong>To continue.</strong> Start Final Cog on your computer with <span class="mono">npm start</span>, then open <a href="http://localhost:5000/app/">http://localhost:5000/app/</a>.</div><a class="button button-muted" href="../">Return to the marketing site</a>`;
+  } else {
+    refreshSession();
+    loadView();
+  }
+})();
