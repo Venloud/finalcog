@@ -10,27 +10,10 @@
   const state = { activeView: "queue", session: null, queue: [], library: [], settings: null, accounts: null, month: new Date(), busy: false };
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const fullDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  let cogFrameQueued = false;
-
-  function updateBrandCog() {
-    cogFrameQueued = false;
-    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const angle = reducedMotion ? 0 : Math.max(0, window.scrollY) * 0.12;
-    document.documentElement.style.setProperty("--angle", `${angle}deg`);
-  }
-  function requestBrandCogUpdate() {
-    if (cogFrameQueued) return;
-    cogFrameQueued = true;
-    requestAnimationFrame(updateBrandCog);
-  }
-  window.addEventListener("scroll", requestBrandCogUpdate, { passive: true });
-  window.addEventListener("pageshow", requestBrandCogUpdate);
-  window.addEventListener("resize", requestBrandCogUpdate, { passive: true });
-  matchMedia("(prefers-reduced-motion: reduce)").addEventListener?.("change", requestBrandCogUpdate);
-  updateBrandCog();
 
   const esc = (v = "") => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const icon = (name) => `<svg aria-hidden="true"><use href="#icon-${name}"/></svg>`;
+  const emptyMachine = () => `<div class="empty-machine" aria-hidden="true"><span class="gear-mark compact" data-cog data-teeth="6" data-direction="-1" data-phase="30"><svg viewBox="0 0 24 24"><use href="../assets/gear-system.svg#gear-6"/></svg></span><span class="gear-mark compact" data-cog data-teeth="12"><svg viewBox="0 0 48 48"><use href="../assets/gear-system.svg#gear-12"/></svg></span></div>`;
   const fmtDate = value => value ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)) : "Unscheduled";
   const fileSize = n => n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / (1024 * 1024)).toFixed(1)} MB`;
   const titleCase = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, m => m.toUpperCase());
@@ -99,7 +82,7 @@
     const count = state.queue.filter(x => ["Queued", "Sending"].includes(x.status)).length;
     const badge = document.getElementById("queue-count"); badge.textContent = count; badge.hidden = !count;
     if (!state.queue.length) {
-      view.innerHTML = `${queueHeading()}<div class="empty-state"><div class="empty-mark">${icon("queue")}</div><h2>Nothing in the queue yet</h2><p>Upload finished videos to your library, add a caption, then choose when each one should move to your TikTok inbox drafts.</p><button class="button button-accent" data-action="go-library">${icon("upload")}<span>Upload videos</span></button></div>`;
+      view.innerHTML = `${queueHeading()}<div class="empty-state">${emptyMachine()}<h2>Nothing in the queue yet</h2><p>Upload finished videos to your library, add a caption, then choose when each one should move to your TikTok inbox drafts.</p><button class="button button-accent" data-action="go-library">${icon("upload")}<span>Upload videos</span></button></div>`;
       return;
     }
     const items = queueSort(state.queue);
@@ -151,7 +134,7 @@
     view.innerHTML = `<div class="page-heading"><div><h1>Video library</h1><p>Keep finished videos together. Add the words and tags you want to use when they're queued.</p></div></div>
       <div class="upload-zone" id="upload-zone"><div class="upload-symbol">${icon("upload")}</div><div class="upload-copy"><strong>Drop finished videos here</strong><span>Choose one or more video files to upload to your library.</span></div><input type="file" id="file-input" accept="video/*" multiple hidden><button class="button button-accent" data-action="pick-files">Choose files</button></div>
       <div class="library-toolbar"><p>${state.library.length ? `${state.library.length} ${state.library.length === 1 ? "video" : "videos"} in your library` : "Your uploaded videos will appear here."}</p><span class="section-kicker">CAPTION / HASHTAGS CAN BE EDITED ANYTIME</span></div>
-      ${state.library.length ? `<div class="library-list">${state.library.map(libraryItem).join("")}</div>` : `<div class="empty-state"><div class="empty-mark">${icon("library")}</div><h2>Your library is clear</h2><p>Start with finished, export-ready videos. Each upload stays here until you schedule it or remove it.</p></div>`}
+      ${state.library.length ? `<div class="library-list">${state.library.map(libraryItem).join("")}</div>` : `<div class="empty-state">${emptyMachine()}<h2>Your library is clear</h2><p>Start with finished, export-ready videos. Each upload stays here until you schedule it or remove it.</p></div>`}
       <div class="workflow-note">Uploads are sent to TikTok inbox drafts when scheduled. You finish the publishing steps inside TikTok.</div>`;
     const zone = document.getElementById("upload-zone");
     ["dragenter", "dragover"].forEach(type => zone.addEventListener(type, event => {
