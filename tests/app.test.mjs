@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
@@ -35,6 +35,7 @@ const {
 const { createAuthorizeUrl, exchangeAuthorizationCode, fetchUserProfile, initializeInboxUpload } =
   await import('../lib/tiktok.mjs');
 const { generateSlots, validateSettings } = await import('../lib/schedule-utils.mjs');
+const { draftCaptionsWithAnthropic, extractVideoFrames } = await import('../lib/captions.mjs');
 const { createFinalCogMcpServer, MCP_TOOL_NAMES } = await import('../lib/mcp.mjs');
 const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
 const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js');
@@ -196,38 +197,80 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
     assert.equal(profile.display_name, 'Creator');
   });
 
-  await t.test('protects JSON routes with the local API token', async () => {
+  await t.test('creates a normal browser session and exposes agent config only on request', async () => {
     const unauthenticated = await fetch(`${base}/api/queue`);
     assert.equal(unauthenticated.status, 401);
-    const invalid = await call('/api/auth/local', {
-      method: 'POST',
-      auth: false,
-      apiToken: false,
-      json: { token: 'wrong-token' },
+    const unauthenticatedWrite = await call('/api/settings', {
+      method: 'PUT', auth: false, apiToken: false, json: {},
     });
-    assert.equal(invalid.status, 401);
-    assert.doesNotMatch(await invalid.text(), /test-local-api-token/);
-
-    const exchange = await call('/api/auth/local', {
-      method: 'POST',
-      auth: false,
-      apiToken: false,
-      json: { token: process.env.FINALCOG_API_TOKEN },
-    });
-    assert.equal(exchange.status, 200);
-    const localCookie = exchange.headers.get('set-cookie');
-    assert.match(localCookie, /^finalcog_api_session=/);
+    assert.equal(unauthenticatedWrite.status, 401);
+    const browserSession = await call('/api/session', { auth: false, apiToken: false });
+    assert.equal(browserSession.status, 200);
+    assert.equal((await browserSession.json()).authenticated, true);
+    const localCookie = browserSession.headers.get('set-cookie');
+    assert.match(localCookie, /^finalcog_session=/);
     assert.match(localCookie, /HttpOnly/);
     assert.match(localCookie, /SameSite=Strict/);
     const localAccess = await fetch(`${base}/api/accounts`, { headers: { Cookie: localCookie.split(';')[0] } });
     assert.equal(localAccess.status, 200);
-    assert.equal((await localAccess.json()).tiktok, null);
+    assert.equal((await localAccess.json()).tiktok.displayName, 'Test Creator');
+    const setup = await call('/api/setup/tiktok', {
+      method: 'POST',
+      json: { clientKey: 'private-client-key', clientSecret: 'private-client-secret-value' },
+    });
+    assert.equal(setup.status, 200);
+    const agentConfig = await call('/api/agent/config');
+    assert.equal(agentConfig.status, 200);
+    const generated = await agentConfig.json();
+    assert.equal(generated.json.mcpServers.finalcog.env.FINALCOG_API_TOKEN, process.env.FINALCOG_API_TOKEN);
+    assert.match(await readFile(join(dataDir, 'local-secrets.json'), 'utf8'), /"encryptionKey"/);
+    const credentialFile = await readFile(join(dataDir, 'credentials.enc'), 'utf8');
+    assert.doesNotMatch(credentialFile, /private-client-secret-value/);
+    assert.equal((await stat(join(dataDir, 'local-secrets.json'))).mode & 0o077, 0);
+  });
+
+  await t.test('drafts per-platform captions from frames without saving or publishing them', async () => {
+    let requestBody;
+    const draft = await draftCaptionsWithAnthropic({
+      apiKey: 'sk-ant-test-secret-not-logged',
+      frames: [Buffer.from([0xff, 0xd8, 0xff])],
+      transcript: 'A creator describes the final edit.',
+      platforms: ['tiktok', 'instagram'],
+      fetchImpl: async (url, options) => {
+        assert.equal(url, 'https://api.anthropic.com/v1/messages');
+        assert.equal(options.headers['x-api-key'], 'sk-ant-test-secret-not-logged');
+        requestBody = JSON.parse(options.body);
+        return jsonResponse({
+          content: [{ type: 'text', text: JSON.stringify({ captions: {
+            tiktok: { caption: 'A short TikTok caption', hashtags: '#edit' },
+            instagram: { caption: 'A Reels caption', hashtags: '#creator' },
+          } }) }],
+        });
+      },
+    });
+    assert.equal(draft.requiresReview, true);
+    assert.deepEqual(Object.keys(draft.captions), ['tiktok', 'instagram']);
+    assert.match(requestBody.messages[0].content.at(-1).text, /User-provided transcript/);
+    assert.equal(requestBody.messages[0].content[1].source.media_type, 'image/jpeg');
+    await assert.rejects(
+      extractVideoFrames(join(dataDir, 'not-a-video.mp4'), { uploadDir: join(dataDir, 'uploads') }),
+      /video is not in the local upload folder/i,
+    );
   });
 
   await t.test('requires same-origin changes and stores video plus caption variants locally', async () => {
     const session = await call('/api/session');
     assert.equal(session.status, 200);
     assert.equal((await session.json()).authenticated, true);
+    assert.equal((await call('/api/session', { origin: false })).status, 200);
+    assert.equal((await call('/api/settings/advanced', { origin: false })).status, 200);
+    const crossSiteBootstrap = await call('/api/session', {
+      origin: false,
+      auth: false,
+      apiToken: false,
+      headers: { 'Sec-Fetch-Site': 'cross-site' },
+    });
+    assert.equal(crossSiteBootstrap.status, 403);
 
     const blocked = await call('/api/auth/logout', { method: 'POST', origin: 'https://attacker.example' });
     assert.equal(blocked.status, 403);
@@ -245,10 +288,18 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
         caption: 'TikTok caption',
         hashtags: '#finalcog',
         captionVariants: { tiktok: 'TikTok caption', instagram: 'Reels caption', youtube: 'Shorts caption' },
+        platforms: ['tiktok', 'instagram', 'youtube'],
       },
     });
     assert.equal(saved.status, 200);
-    assert.equal((await saved.json()).captionVariants.instagram, 'Reels caption');
+    const savedVideo = await saved.json();
+    assert.equal(savedVideo.captionVariants.instagram, 'Reels caption');
+    assert.deepEqual(savedVideo.platforms, ['tiktok', 'instagram', 'youtube']);
+    const unavailableChannel = await call(`/api/videos/${media.id}/schedule`, {
+      method: 'POST',
+      json: { scheduledAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() },
+    });
+    assert.equal(unavailableChannel.status, 501);
     assert.equal((await call('/api/library')).status, 200);
   });
 
@@ -402,7 +453,7 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
 
     const badSettings = await call('/api/settings', {
       method: 'PUT',
-      json: { timezone: 'UTC', postsPerWeek: 1, activeDays: [1], preferredTimes: ['10:00'], minSpacingHours: 2 },
+      json: { timezone: 'UTC', postsPerWeek: 1, activeDays: [1], preferredTimes: ['10:00'], minSpacingHours: 19 },
     });
     assert.equal(badSettings.status, 400);
 
@@ -411,7 +462,7 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
       postsPerWeek: 3,
       activeDays: [1, 3, 5],
       preferredTimes: ['10:00', '15:00'],
-      minSpacingHours: 3,
+      minSpacingHours: 20,
     };
     const savedSettings = await call('/api/settings', { method: 'PUT', json: settings });
     assert.equal(savedSettings.status, 200);
@@ -512,12 +563,12 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
     assert.equal(media.caption, 'Agent import');
     assert.equal(media.source.provider, 'local-file');
 
-    const firstTime = Date.now() + 20 * 60 * 60 * 1000;
+    const firstTime = Date.now() + 180 * 24 * 60 * 60 * 1000;
     const scheduled = await call(`/api/videos/${media.id}/schedule`, {
       method: 'POST',
       json: { scheduledAt: new Date(firstTime).toISOString() },
     });
-    assert.equal(scheduled.status, 201);
+    assert.equal(scheduled.status, 201, JSON.stringify(await scheduled.clone().json()));
     const queueItem = await scheduled.json();
     assert.equal(queueItem.status, 'Queued');
 
@@ -533,7 +584,7 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
       json: { scheduledAt: new Date(firstTime + 60 * 60 * 1000).toISOString() },
     });
     assert.equal(tooClose.status, 409);
-    assert.match((await tooClose.json()).error, /at least 3 hours apart/);
+    assert.match((await tooClose.json()).error, /at least 20 hours apart/);
 
     const status = await call(`/api/videos/${queueItem.id}/status`);
     assert.equal(status.status, 200);
@@ -562,7 +613,7 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
       assert.equal(added.structuredContent.caption, 'From an MCP agent');
       const videoId = added.structuredContent.id;
 
-      const firstTime = Date.now() + 28 * 60 * 60 * 1000;
+      const firstTime = Date.now() + 220 * 24 * 60 * 60 * 1000;
       const scheduled = await client.callTool({
         name: 'schedule_video',
         arguments: { videoId, scheduledAt: new Date(firstTime).toISOString() },
@@ -578,7 +629,7 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
         },
       });
       assert.equal(pacingRefusal.isError, true);
-      assert.match(pacingRefusal.content[0].text, /at least 3 hours apart/);
+      assert.match(pacingRefusal.content[0].text, /at least 20 hours apart/);
 
       const moved = await client.callTool({
         name: 'reschedule',
@@ -600,10 +651,20 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
       assert.equal(flaggedRefusal.isError, true);
       assert.match(flaggedRefusal.content[0].text, /never resend/i);
 
+      const captionUpdate = await client.callTool({
+        name: 'update_caption',
+        arguments: {
+          videoId,
+          caption: 'Revised caption',
+          platforms: ['tiktok', 'instagram'],
+          captionVariants: { instagram: 'Reels variant' },
+        },
+      });
+      assert.deepEqual(captionUpdate.structuredContent.platforms, ['tiktok', 'instagram']);
       const accounts = await client.callTool({ name: 'list_accounts', arguments: {} });
       assert.equal(accounts.structuredContent.tiktok.displayName, 'Test Creator');
       const settings = await client.callTool({ name: 'get_settings', arguments: {} });
-      assert.equal(settings.structuredContent.minSpacingHours, 3);
+      assert.equal(settings.structuredContent.minSpacingHours, 20);
     } finally {
       await client.close();
       await mcp.close();

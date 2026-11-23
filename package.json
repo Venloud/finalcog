@@ -8,7 +8,7 @@
     "start": "node server.mjs",
     "mcp": "node mcp-server.mjs",
     "test": "node --test",
-    "check": "node --check server.mjs && node --check mcp-server.mjs && node --check lib/application.mjs && node --check lib/api-auth.mjs && node --check lib/config.mjs && node --check lib/database.mjs && node --check lib/github.mjs && node --check lib/http.mjs && node --check lib/mcp.mjs && node --check lib/schedule-utils.mjs && node --check lib/scheduler.mjs && node --check lib/security.mjs && node --check lib/tiktok.mjs && node --check app/app.js && node --check tests/app.test.mjs"
+    "check": "node --check server.mjs && node --check mcp-server.mjs && node --check lib/application.mjs && node --check lib/api-auth.mjs && node --check lib/captions.mjs && node --check lib/config.mjs && node --check lib/database.mjs && node --check lib/github.mjs && node --check lib/http.mjs && node --check lib/local-secrets.mjs && node --check lib/mcp.mjs && node --check lib/schedule-utils.mjs && node --check lib/scheduler.mjs && node --check lib/security.mjs && node --check lib/tiktok.mjs && node --check app/app.js && node --check tests/app.test.mjs"
   },
   "engines": {
     "node": ">=20"
