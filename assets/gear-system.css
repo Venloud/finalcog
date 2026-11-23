@@ -7,22 +7,15 @@
   --palm-green: #016a16;
   --schematic-hub: var(--haiti-blue);
   --schematic-gold: var(--gold);
-  --schematic-grid-minor: #f1f3f409;
-  --schematic-grid-major: #f1f3f40e;
   --font-heading: "Archivo", Arial, sans-serif;
   --font-body: "IBM Plex Sans", Arial, sans-serif;
   --font-meta: "IBM Plex Mono", monospace;
 }
 
 body {
-  background-color: var(--schematic-ink);
-  background-image:
-    linear-gradient(to right, var(--schematic-grid-minor) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--schematic-grid-minor) 1px, transparent 1px),
-    linear-gradient(to right, var(--schematic-grid-major) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--schematic-grid-major) 1px, transparent 1px);
-  background-size: 40px 40px, 40px 40px, 160px 160px, 160px 160px;
-  background-position: -1px -1px;
+  background:
+    radial-gradient(ellipse at 75% 28%, #ffffff08, transparent 46%),
+    linear-gradient(135deg, #0b0b0c 0%, #141416 52%, #1c1c1f 100%);
 }
 
 .gear-mark {
@@ -147,7 +140,7 @@ body {
   border-top: 1px solid #f1f3f450;
   text-align: center;
   color: #aab3b8;
-  font: 12px/1.2 var(--font-meta);
+  font: 13px/1.2 var(--font-meta);
   letter-spacing: .04em;
 }
 .rail-dimension::before,
@@ -165,9 +158,12 @@ body {
   position: absolute;
   left: 0;
   bottom: 0;
+  width: 144px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #aab3b8;
-  font: 12px/1.4 var(--font-meta);
-  letter-spacing: .08em;
+  font: 13px/1.4 var(--font-meta);
+  letter-spacing: .04em;
   white-space: nowrap;
 }
 .rail-label::before { content: "+"; margin-right: 5px; color: var(--schematic-paper); }
@@ -177,19 +173,18 @@ body {
 .hero-machine {
   position: relative;
   width: 336px;
-  height: 224px;
+  height: 216px;
   justify-self: end;
   align-self: center;
   color: var(--schematic-paper);
 }
 .hero-machine .gear-mark {
   position: absolute;
-  top: 20px;
   opacity: .96;
 }
-.hero-machine .gear-24 { left: 0; }
-.hero-machine .gear-12 { left: 192px; top: 68px; }
-.hero-machine .gear-6 { left: 288px; top: 92px; }
+.hero-machine .gear-24 { left: 0; top: 24px; width: 192px; height: 192px; }
+.hero-machine .gear-12 { left: 192px; top: 72px; width: 96px; height: 96px; }
+.hero-machine .gear-6 { left: 288px; top: 96px; width: 48px; height: 48px; }
 .hero-machine .gear-mark::after {
   width: 8px;
   height: 8px;
@@ -197,14 +192,14 @@ body {
   opacity: .8;
 }
 .hero-machine .gear-24 .gear-hub {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 .hero-dimension {
   position: absolute;
-  left: 96px;
+  left: 60px;
   top: 8px;
-  width: 144px;
+  width: 216px;
   border-top: 1px solid #f1f3f44d;
   text-align: center;
   color: var(--schematic-gold);
@@ -261,6 +256,5 @@ body {
 
 @media (max-width: 1100px) {
   .site-gear-rail,
-  .rail-gears,
-  .hero-machine { display: none; }
+  .rail-gears { display: none; }
 }

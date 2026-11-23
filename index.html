@@ -31,7 +31,7 @@
       margin: 0;
       background: var(--ink);
       color: var(--paper);
-      font: 400 var(--type-16)/1.65 var(--font-body);
+      font: 400 18px/1.65 var(--font-body);
       -webkit-font-smoothing: antialiased;
     }
     a { color: inherit; text-decoration: none; }
@@ -101,8 +101,9 @@
     .hero {
       min-height: min(760px, calc(100svh - 82px));
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) 360px;
       align-items: center;
+      gap: 45px;
       padding-block: 76px 94px;
     }
     .hero-copy { max-width: 790px; position: relative; z-index: 1; }
@@ -125,62 +126,51 @@
       max-width: 65ch;
       margin: 27px 0 0;
       color: var(--muted);
-      font-size: var(--type-16);
+      font-size: 18px;
       line-height: 1.75;
     }
     .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 31px; }
-    .hero-note { margin: 17px 0 0; color: var(--quiet); font: 12px/1.6 var(--font-meta); }
-    .feature-image img {
-      display: block;
-      width: 100%;
-      object-fit: cover;
-      filter: grayscale(1) contrast(1.08);
-    }
-    figcaption { display: flex; justify-content: space-between; gap: 16px; margin-top: 10px; color: var(--quiet); font: 12px/1.5 var(--font-meta); }
-    figcaption a { text-decoration: underline; text-underline-offset: 3px; }
     .section { border-top: 1px solid var(--line-soft); padding-block: clamp(72px, 9vw, 116px); }
     .section-intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, .55fr); align-items: end; gap: 42px; margin-bottom: 49px; }
     .section-intro h2 { max-width: 690px; margin: 0; font-size: clamp(var(--type-40), 5.5vw, var(--type-64)); letter-spacing: -.05em; line-height: 1.04; }
-    .section-intro p { max-width: 390px; margin: 0; color: var(--muted); font-size: var(--type-16); line-height: 1.75; }
-    .section-marker { display: flex; align-items: center; gap: 13px; margin-bottom: 22px; color: var(--quiet); font: 12px/1.4 var(--font-meta); }
+    .section-intro p { max-width: 390px; margin: 0; color: var(--muted); font-size: 18px; line-height: 1.75; }
+    .section-marker { display: flex; align-items: center; gap: 13px; margin-bottom: 22px; color: var(--quiet); font: 13px/1.4 var(--font-meta); }
     .section-marker::before { width: 18px; height: 1px; background: var(--line); content: ""; }
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
     .step { min-height: 224px; padding: 23px 26px 27px 0; }
     .step + .step { border-left: 1px solid var(--line-soft); padding-left: 27px; }
-    .step-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--quiet); font: 12px/1.4 var(--font-meta); }
+    .step-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--quiet); font: 13px/1.4 var(--font-meta); }
     .step-index { color: var(--gold); }
     .step h3 { margin: 34px 0 9px; font-size: var(--type-20); letter-spacing: -.035em; }
-    .step p { max-width: 320px; margin: 0; color: var(--muted); font-size: var(--type-14); line-height: 1.75; }
+    .step p { max-width: 320px; margin: 0; color: var(--muted); font-size: 18px; line-height: 1.75; }
     .features-layout { display: grid; grid-template-columns: minmax(0, .83fr) minmax(350px, 1fr); align-items: center; gap: clamp(45px, 8vw, 108px); }
     .feature-copy h2 { max-width: 520px; margin: 0; font-size: clamp(var(--type-40), 5.4vw, var(--type-64)); letter-spacing: -.05em; line-height: 1.03; }
-    .feature-copy > p { max-width: 65ch; margin: 20px 0 30px; color: var(--muted); font-size: var(--type-16); line-height: 1.75; }
+    .feature-copy > p { max-width: 65ch; margin: 20px 0 30px; color: var(--muted); font-size: 18px; line-height: 1.75; }
     .feature-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
     .feature-list li { display: grid; grid-template-columns: 30px 1fr; gap: 13px; padding: 15px 0; border-bottom: 1px solid var(--line-soft); }
-    .feature-list .index { color: var(--gold); font: 12px/1.4 var(--font-meta); }
-    .feature-list strong { display: block; font-size: var(--type-14); font-weight: 500; }
-    .feature-list span:last-child { display: block; margin-top: 4px; color: var(--muted); font-size: var(--type-14); line-height: 1.7; }
-    .feature-image { margin: 0; }
-    .feature-image img { height: clamp(330px, 39vw, 480px); }
+    .feature-list .index { color: var(--gold); font: 13px/1.4 var(--font-meta); }
+    .feature-list strong { display: block; font-size: 18px; font-weight: 500; }
+    .feature-list span:last-child { display: block; margin-top: 4px; color: var(--muted); font-size: 18px; line-height: 1.7; }
     .platform-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(290px, .65fr); gap: 70px; align-items: start; }
     .platform-layout h2 { max-width: 640px; margin: 0; font-size: clamp(var(--type-40), 5.4vw, var(--type-64)); line-height: 1.04; letter-spacing: -.05em; }
-    .platform-layout > p { max-width: 65ch; color: var(--muted); font-size: var(--type-16); line-height: 1.75; margin: 20px 0 0; }
+    .platform-layout > p { max-width: 65ch; color: var(--muted); font-size: 18px; line-height: 1.75; margin: 20px 0 0; }
     .platform-list { border-top: 1px solid var(--line); }
     .platform-row { min-height: 58px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 20px; border-bottom: 1px solid var(--line-soft); }
-    .platform-row strong { font-size: var(--type-16); font-weight: 500; }
-    .platform-row span { color: var(--quiet); font: 12px/1.5 var(--font-meta); }
+    .platform-row strong { font-size: 18px; font-weight: 500; }
+    .platform-row span { color: var(--quiet); font: 13px/1.5 var(--font-meta); }
     .platform-row .active { color: var(--muted); }
     .beta-section { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 42px; padding-block: 74px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
     .beta-section h2 { margin: 0; font-size: clamp(var(--type-40), 5.5vw, var(--type-64)); letter-spacing: -.05em; line-height: 1.02; }
-    .beta-section p { max-width: 65ch; margin: 16px 0 0; color: var(--muted); font-size: var(--type-16); }
+    .beta-section p { max-width: 65ch; margin: 16px 0 0; color: var(--muted); font-size: 18px; }
     .faq-layout { display: grid; grid-template-columns: minmax(240px, .6fr) minmax(0, 1fr); gap: clamp(40px, 8vw, 100px); }
     .faq-layout h2 { margin: 0; font-size: clamp(var(--type-40), 5.5vw, var(--type-64)); letter-spacing: -.05em; line-height: 1.05; }
     .faq-list { border-top: 1px solid var(--line); }
     details { border-bottom: 1px solid var(--line-soft); }
-    summary { position: relative; padding: 19px 42px 19px 0; cursor: pointer; list-style: none; font-size: var(--type-16); font-weight: 500; }
+    summary { position: relative; padding: 19px 42px 19px 0; cursor: pointer; list-style: none; font-size: 18px; font-weight: 500; }
     summary::-webkit-details-marker { display: none; }
     summary::after { position: absolute; top: 17px; right: 2px; content: "+"; color: var(--muted); font: 20px/1 var(--font-meta); }
     details[open] summary::after { content: "−"; }
-    details p { max-width: 70ch; margin: -2px 35px 20px 0; color: var(--muted); font-size: var(--type-14); line-height: 1.75; }
+    details p { max-width: 70ch; margin: -2px 35px 20px 0; color: var(--muted); font-size: 18px; line-height: 1.75; }
     .footer { position: relative; padding-block: 42px 22px; }
     .footer::before,
     .footer::after {
@@ -194,11 +184,11 @@
     .footer::before { height: 2px; background: var(--haiti-blue); }
     .footer::after { top: 2px; height: 1px; background: var(--haiti-red); }
     .footer-top { display: flex; justify-content: space-between; gap: 40px; align-items: start; }
-    .footer-brand p { margin: 14px 0 0; color: var(--quiet); font: 12px/1.5 var(--font-meta); }
+    .footer-brand p { margin: 14px 0 0; color: var(--quiet); font: 13px/1.5 var(--font-meta); }
     .footer-links { display: flex; flex-wrap: wrap; gap: clamp(35px, 6vw, 82px); }
-    .footer-group { display: grid; align-content: start; gap: 10px; color: var(--muted); font-size: var(--type-14); }
-    .footer-group strong { margin-bottom: 4px; color: var(--quiet); font: 12px/1.5 var(--font-meta); }
-    .footer-bottom { display: flex; justify-content: space-between; gap: 20px; margin-top: 55px; padding-top: 18px; border-top: 1px solid var(--line-soft); color: var(--quiet); font: 12px/1.5 var(--font-meta); }
+    .footer-group { display: grid; align-content: start; gap: 10px; color: var(--muted); font-size: 18px; }
+    .footer-group strong { margin-bottom: 4px; color: var(--quiet); font: 13px/1.5 var(--font-meta); }
+    .footer-bottom { display: flex; justify-content: space-between; gap: 20px; margin-top: 55px; padding-top: 18px; border-top: 1px solid var(--line-soft); color: var(--quiet); font: 13px/1.5 var(--font-meta); }
     [hidden] { display: none !important; }
     @media (min-width: 1101px) {
       .container {
@@ -233,7 +223,7 @@
       .site-nav.open { display: grid; }
       .site-nav a { padding: 9px 0; }
       .header-action { margin-left: auto; }
-      .header-action .button { min-height: 39px; padding-inline: 11px; font-size: 12px; }
+      .header-action .button { min-height: 39px; padding-inline: 11px; font-size: 13px; }
       .menu-button { display: grid; }
       .hero { min-height: auto; grid-template-columns: 1fr; padding-block: 70px 72px; }
       .hero-copy { max-width: 620px; }
@@ -245,8 +235,7 @@
       .step + .step { border-left: 0; border-top: 1px solid var(--line-soft); padding-left: 0; }
       .step h3 { margin-top: 21px; }
       .features-layout { grid-template-columns: 1fr; gap: 38px; }
-      .feature-image { order: -1; }
-      .feature-image img { height: clamp(290px, 68vw, 430px); }
+      .hero-machine { justify-self: start; }
       .platform-layout { grid-template-columns: 1fr; gap: 32px; }
       .beta-section { grid-template-columns: 1fr; gap: 25px; }
       .beta-section .button { justify-self: start; }
@@ -261,7 +250,7 @@
       .header-action .button { max-width: 132px; white-space: nowrap; }
       .hero-actions { align-items: flex-start; flex-direction: column; }
       .hero-actions .button { width: auto; }
-      figcaption { align-items: flex-start; flex-direction: column; gap: 4px; }
+      .hero-machine { transform: scale(.82); transform-origin: left top; margin-bottom: -39px; }
       .footer-links { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -282,22 +271,22 @@
     <div class="rail-station" data-rail-station data-anchor="#top" data-offset="250">
       <div class="rail-dimension"><span>72 C-C</span></div>
       <i class="station-center center-small"></i><i class="station-center center-large"></i>
-      <div class="rail-label">12 / 24 teeth · 1:2 mesh</div>
+      <div class="rail-label">12 / 24 · 1:2</div>
     </div>
     <div class="rail-station" data-rail-station data-anchor="#how" data-offset="136">
       <div class="rail-dimension"><span>72 C-C</span></div>
       <i class="station-center center-small"></i><i class="station-center center-large"></i>
-      <div class="rail-label">UPLOAD / SCHEDULE</div>
+      <div class="rail-label">UPLOAD / QUEUE</div>
     </div>
     <div class="rail-station" data-rail-station data-anchor="#features" data-offset="136">
       <div class="rail-dimension"><span>72 C-C</span></div>
       <i class="station-center center-small"></i><i class="station-center center-large"></i>
-      <div class="rail-label">LIBRARY / CAPTIONS</div>
+      <div class="rail-label">LIBRARY / TEXT</div>
     </div>
     <div class="rail-station" data-rail-station data-anchor="#platforms" data-offset="136">
       <div class="rail-dimension"><span>72 C-C</span></div>
       <i class="station-center center-small"></i><i class="station-center center-large"></i>
-      <div class="rail-label">CHANNELS / PACING</div>
+      <div class="rail-label">CHANNELS / 20H</div>
     </div>
     <div class="rail-station" data-rail-station data-anchor="#pricing" data-offset="76">
       <div class="rail-dimension"><span>72 C-C</span></div>
@@ -307,7 +296,7 @@
     <div class="rail-station" data-rail-station data-anchor="#faq" data-offset="136">
       <div class="rail-dimension"><span>72 C-C</span></div>
       <i class="station-center center-small"></i><i class="station-center center-large"></i>
-      <div class="rail-label">QUESTIONS / DETAILS</div>
+      <div class="rail-label">FAQ / DETAILS</div>
     </div>
   </aside>
 
@@ -321,7 +310,7 @@
         <a href="#faq">FAQ</a>
       </nav>
       <div class="header-action">
-        <a class="button button-primary" href="app/">Sign in with TikTok<svg aria-hidden="true"><use href="#arrow"/></svg></a>
+        <a class="button button-primary" href="app/">Open Final Cog<svg aria-hidden="true"><use href="#arrow"/></svg></a>
         <button class="menu-button" id="menu-button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav"><svg aria-hidden="true"><use href="#menu"/></svg></button>
       </div>
     </header>
@@ -330,36 +319,41 @@
       <section class="hero container" aria-labelledby="hero-title">
         <div class="hero-copy">
         <h1 id="hero-title">Keep the Momentum Going.</h1>
-          <p class="lead">Upload finished videos in batches. Set a posting rhythm. Final Cog sends each one to your TikTok inbox drafts so you can review and finish inside TikTok.</p>
+          <p class="lead">Batch finished videos, set a rhythm, and review each TikTok draft before it goes public.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="app/">Sign in with TikTok<svg aria-hidden="true"><use href="#arrow"/></svg></a>
+            <a class="button button-primary" href="app/">Open Final Cog<svg aria-hidden="true"><use href="#arrow"/></svg></a>
             <a class="button" href="#how">See how it works</a>
           </div>
-          <p class="hero-note">TikTok inbox drafts only. Final Cog does not auto-post publicly.</p>
+        </div>
+        <div class="hero-machine" aria-label="Three meshing gears" role="img">
+          <span class="gear-mark gear-24" data-teeth="24"><svg viewBox="0 0 96 96" aria-hidden="true"><g data-cog data-teeth="24"><use href="assets/gear-system.svg#gear-24"/></g></svg><span class="gear-hub"></span></span>
+          <span class="gear-mark gear-12" data-teeth="12"><svg viewBox="0 0 48 48" aria-hidden="true"><g data-cog data-teeth="12" data-direction="-1"><use href="assets/gear-system.svg#gear-12"/></g></svg></span>
+          <span class="gear-mark gear-6" data-teeth="6"><svg viewBox="0 0 24 24" aria-hidden="true"><g data-cog data-teeth="6"><use href="assets/gear-system.svg#gear-6"/></g></svg></span>
+          <span class="hero-dimension"><span>24 / 12 / 6 TEETH</span></span>
         </div>
       </section>
 
       <section class="section" id="how" data-gear-anchor>
         <div class="container">
           <div class="section-intro">
-            <div><div class="section-marker">A short workflow</div><h2>From finished video to a steadier week.</h2></div>
-            <p>Prepare several videos in one session, then let a clear schedule handle the next step. You stay in control of what goes public.</p>
+            <div><div class="section-marker">01 / WORKFLOW</div><h2>Upload. Schedule. Publish.</h2></div>
+            <p>Finished videos move through one clear workflow.</p>
           </div>
           <div class="steps">
             <article class="step">
               <div class="step-top"><span><span class="step-index">01</span> / Upload</span></div>
-              <h3>Keep videos together.</h3>
-              <p>Upload finished files in batches. Save a caption and hashtags with each video.</p>
+              <h3>Upload</h3>
+              <p>Add finished videos and their captions.</p>
             </article>
             <article class="step">
               <div class="step-top"><span><span class="step-index">02</span> / Schedule</span></div>
-              <h3>Choose your pace.</h3>
-              <p>Set days and times, fill future slots, or move a video by hand in the queue or calendar.</p>
+              <h3>Schedule</h3>
+              <p>Set a rhythm or choose times by hand.</p>
             </article>
             <article class="step">
               <div class="step-top"><span><span class="step-index">03</span> / Publish</span></div>
-              <h3>Finish in TikTok.</h3>
-              <p>Final Cog sends a video to your TikTok inbox drafts. Review it and publish from TikTok when ready.</p>
+              <h3>Publish</h3>
+              <p>Review the TikTok draft and finish there.</p>
             </article>
           </div>
         </div>
@@ -368,29 +362,25 @@
       <section class="section" id="features" data-gear-anchor>
         <div class="container features-layout">
           <div class="feature-copy">
-            <div class="section-marker">Built for repeatable work</div>
-            <h2>More than a list of posts.</h2>
-            <p>A useful publishing workflow needs a place for the media, a realistic pace, and a clear record of what happened.</p>
+            <div class="section-marker">02 / WORKSPACE</div>
+            <h2>Your videos, ready to move.</h2>
+            <p>Keep media, captions, and delivery status together.</p>
             <ul class="feature-list">
-              <li><span class="index">01</span><span><strong>A library for each creator</strong><span>Keep finished videos and their notes in one local workspace.</span></span></li>
-              <li><span class="index">02</span><span><strong>Captions that fit each platform</strong><span>Save caption variants with a video, even while future channels are being built.</span></span></li>
-              <li><span class="index">03</span><span><strong>Room between uploads</strong><span>Keep TikTok inbox uploads spaced by hours instead of sending a batch all at once.</span></span></li>
-              <li><span class="index">04</span><span><strong>No blind retries</strong><span>If TikTok rejects or flags an upload, Final Cog will not resend it automatically.</span></span></li>
+              <li><span class="index">01</span><span><strong>Local media library</strong></span></li>
+              <li><span class="index">02</span><span><strong>Captions for each channel</strong></span></li>
+              <li><span class="index">03</span><span><strong>20-hour minimum spacing</strong></span></li>
+              <li><span class="index">04</span><span><strong>No automatic retries for flagged posts</strong></span></li>
             </ul>
           </div>
-          <figure class="feature-image">
-            <img src="https://images.pexels.com/photos/34779215/pexels-photo-34779215.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1400" alt="A creator edits a video on a laptop in a studio." loading="lazy">
-            <figcaption><span>Work through the edits once, then plan the next steps.</span><a href="https://www.pexels.com/photo/woman-editing-video-on-laptop-in-studio-34779215/" target="_blank" rel="noopener noreferrer">Photo by Caleb Oquendo / Pexels</a></figcaption>
-          </figure>
         </div>
       </section>
 
       <section class="section" id="platforms" data-gear-anchor>
         <div class="container platform-layout">
           <div>
-            <div class="section-marker">One channel first</div>
-            <h2>Start with TikTok. Add the rest carefully.</h2>
-            <p>The first connection sends scheduled videos to TikTok inbox drafts. Instagram Reels and YouTube Shorts are planned next. Twitch is further out.</p>
+            <div class="section-marker">03 / CHANNELS</div>
+            <h2>One workspace for every channel.</h2>
+            <p>TikTok is ready first. Instagram and YouTube are coming soon.</p>
           </div>
           <div class="platform-list" aria-label="Platform availability">
             <div class="platform-row"><strong>TikTok</strong><span class="active">First integration · inbox drafts</span></div>
@@ -402,19 +392,19 @@
       </section>
 
       <section class="beta-section container" id="pricing" data-gear-anchor>
-        <div><div class="section-marker">Pricing</div><h2>Free while in beta.</h2><p>Plans are not set yet. The beta focuses on the TikTok workflow first.</p></div>
+        <div><div class="section-marker">04 / PRICING</div><h2>Free while in beta.</h2></div>
         <a class="button button-primary" href="app/">Open your workspace<svg aria-hidden="true"><use href="#arrow"/></svg></a>
       </section>
 
       <section class="section" id="faq" data-gear-anchor>
         <div class="container faq-layout">
-          <div><div class="section-marker">FAQ</div><h2>Good to know.</h2></div>
+          <div><div class="section-marker">05 / FAQ</div><h2>Good to know.</h2></div>
           <div class="faq-list">
-            <details><summary>Does Final Cog publish videos publicly?</summary><p>No. The first TikTok integration sends videos to your inbox drafts. You review the draft and complete publishing inside TikTok.</p></details>
-            <details><summary>Which channels can I connect today?</summary><p>TikTok is the first integration. Instagram Reels and YouTube Shorts are coming soon; Twitch is planned for later.</p></details>
-            <details><summary>Can I change a scheduled time?</summary><p>Yes. Move a queued video from the queue or calendar. Final Cog also keeps a minimum gap between TikTok inbox uploads.</p></details>
-            <details><summary>What happens when TikTok rejects an upload?</summary><p>The item is marked failed or needs review with the reason when available. Final Cog does not automatically resend an upload TikTok processed or flagged.</p></details>
-            <details><summary>Where are my videos stored?</summary><p>The first version runs on your own computer. Video files, captions, queue details, and encrypted TikTok tokens stay in the local data folder until you remove them.</p></details>
+            <details><summary>Does Final Cog publish videos publicly?</summary><p>No. TikTok uploads go to inbox drafts for your review.</p></details>
+            <details><summary>Which channels work today?</summary><p>TikTok works now. Instagram and YouTube are coming soon; Twitch later.</p></details>
+            <details><summary>Can I change a scheduled time?</summary><p>Yes. Reschedule any queued video; minimum spacing still applies.</p></details>
+            <details><summary>What if TikTok flags an upload?</summary><p>It needs review and will not be resent automatically.</p></details>
+            <details><summary>Where are my videos stored?</summary><p>Video files and queue data stay in your local data folder.</p></details>
           </div>
         </div>
       </section>
@@ -429,7 +419,7 @@
           </div>
           <div class="footer-links">
             <div class="footer-group"><strong>Product</strong><a href="#how">How it works</a><a href="#features">Features</a><a href="#platforms">Platforms</a><a href="app/">Open workspace</a></div>
-            <div class="footer-group"><strong>Information</strong><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="assets/CREDITS.md">Image credits</a><a href="https://github.com/Venloud/finalcog" target="_blank" rel="noopener noreferrer">GitHub</a></div>
+            <div class="footer-group"><strong>Information</strong><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://github.com/Venloud/finalcog" target="_blank" rel="noopener noreferrer">GitHub</a></div>
           </div>
         </div>
         <div class="footer-bottom"><span>© <span id="year"></span> Final Cog</span><span>Built for a steady posting rhythm.</span><a href="#top">Back to top</a></div>

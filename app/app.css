@@ -17,7 +17,7 @@
   text-rendering: optimizeLegibility;
 }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100dvh; background-color: var(--ink); color: var(--paper); font: 14px/1.5 var(--font-ui); }
+body { margin: 0; min-width: 320px; min-height: 100dvh; background: radial-gradient(ellipse at 75% 28%, #ffffff08, transparent 46%), linear-gradient(135deg, #0b0b0c 0%, #141416 52%, #1c1c1f 100%); color: var(--paper); font: 17px/1.5 var(--font-ui); }
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; }
@@ -221,8 +221,8 @@ svg { display: block; width: 19px; height: 19px; fill: none; stroke: currentColo
   .view-content { padding: 31px 17px 45px; }
   .page-heading { align-items: flex-start; flex-direction: column; margin-bottom: 26px; gap: 17px; }
   .page-heading h1 { font-size: 34px; }
-  .page-heading p { font-size: 12px; }
-  .workflow-note { margin-bottom: 21px; font-size: 11px; }
+  .page-heading p { font-size: 17px; }
+  .workflow-note { margin-bottom: 21px; font-size: 17px; }
   .queue-row { grid-template-columns: 41px minmax(0, 1fr); gap: 11px; padding: 14px 0; }
   .queue-row .row-meta { grid-column: 2; }
   .queue-row .row-actions { grid-column: 2; margin: -7px 0 0; }
@@ -299,40 +299,6 @@ button, input, textarea, select { font-family: var(--font-body); }
 .calendar-day.outside { color: #aab3b8; }
 .field-control::placeholder { color: #aeb8bc; opacity: 1; }
 .media-tile, .file-cover { color: #aeb8bc; }
-.local-access {
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 28px;
-  background-color: var(--ink);
-}
-.local-access-card {
-  width: min(520px, 100%);
-  border: 1px solid var(--line);
-  padding: clamp(24px, 5vw, 42px);
-  background: #12181b;
-}
-.local-access-card h1 {
-  margin: 18px 0 10px;
-  font: 800 clamp(32px, 6vw, 48px)/1.02 var(--font-heading);
-  font-variation-settings: "wdth" 120, "wght" 800;
-  letter-spacing: -.05em;
-}
-.local-access-card p { color: var(--muted); font-size: 16px; line-height: 1.7; }
-.local-access-card code { color: var(--paper); font: 13px var(--font-meta); }
-.local-access-card form { display: grid; gap: 10px; margin-top: 24px; }
-.local-access-card label { color: var(--paper); font: 13px var(--font-meta); }
-.local-access-card input {
-  width: 100%;
-  min-height: 46px;
-  border: 1px solid var(--line);
-  background: #0d1215;
-  color: var(--paper);
-  padding: 10px 12px;
-}
-.local-access-card form button { justify-self: start; margin-top: 5px; }
-.local-access-card .local-access-error { color: var(--paper); font-size: 14px; margin: 3px 0 0; }
-.local-access-help { border-top: 1px solid var(--line-soft); padding-top: 15px; font-size: 14px !important; }
 .account-chip, .channel-state {
   min-height: 28px;
   border: 1px solid var(--line);
@@ -350,7 +316,7 @@ button, input, textarea, select { font-family: var(--font-body); }
 }
 .github-import-head { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; }
 .github-import-head h2 { margin: 0; font: 700 20px/1.2 var(--font-heading); }
-.github-import-head p { color: var(--muted); font-size: 14px; margin: 7px 0 15px; }
+.github-import-head p { color: var(--muted); font-size: 17px; margin: 7px 0 15px; }
 .github-source-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 9px; }
 .github-source-form label { display: grid; gap: 5px; color: var(--muted); font: 13px var(--font-meta); }
 .github-source-form input, .github-source-choice {
@@ -364,9 +330,72 @@ button, input, textarea, select { font-family: var(--font-body); }
 .github-source-results { margin-top: 14px; }
 .github-source-results .github-source-choice { width: 100%; }
 .github-import-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
-.github-import-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.github-import-empty { margin: 0; color: var(--muted); font-size: 17px; }
 .github-source-meta { color: var(--quiet); font: 13px/1.6 var(--font-meta); margin-top: 8px; }
 .library-source { display: inline-block; color: var(--quiet); font: 13px/1.5 var(--font-meta); margin-top: 6px; }
+.first-run {
+  min-height: 310px;
+  padding: clamp(26px, 5vw, 54px);
+  margin: 0 0 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, .7fr);
+  align-items: center;
+  gap: 32px;
+  border: 1px solid var(--line-soft);
+  background: #11111380;
+}
+.first-run h1 { margin: 13px 0 8px; font: 800 clamp(34px, 5vw, 58px)/1.02 var(--font-heading); font-variation-settings: "wdth" 115, "wght" 800; letter-spacing: -.05em; }
+.first-run p { margin: 0; color: var(--muted); font-size: 17px; }
+.privacy-line { color: var(--muted); margin-top: 20px !important; font-size: 17px !important; }
+.first-run-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
+.coming-soon { color: var(--muted); font-size: 17px; }
+.demo-data-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; margin: 20px 0 13px; padding: 11px 0; border-block: 1px solid var(--line-soft); color: var(--muted); font-size: 17px; }
+.demo-data-chip { display: inline-flex; align-items: center; min-height: 25px; padding: 2px 8px; border: 1px solid var(--line); color: var(--paper); font: 500 13px/1.35 var(--font-meta); letter-spacing: .02em; white-space: nowrap; }
+.demo-library-item { align-items: center; }
+.demo-caption { display: grid; gap: 5px; min-width: 0; }
+.demo-caption span { color: var(--muted); font: 13px/1.4 var(--font-meta); }
+.demo-caption p { margin: 0; overflow-wrap: anywhere; color: var(--paper); font-size: 17px; }
+.platform-picker { display: flex; flex-wrap: wrap; gap: 10px 18px; padding: 0; margin: 0 0 6px; border: 0; }
+.platform-picker legend { width: 100%; color: var(--muted); font-size: 13px; padding: 0 0 6px; }
+.platform-picker label { display: inline-flex; align-items: center; gap: 7px; margin: 0; font-size: 13px; }
+.platform-picker input { accent-color: var(--haiti-blue); }
+.platform-picker .platform-soon { color: var(--quiet); }
+.advanced-settings { margin-top: 34px; border-top: 1px solid var(--line-soft); padding-top: 17px; }
+.advanced-settings summary { cursor: pointer; color: var(--muted); font-size: 15px; }
+.advanced-panel { border-bottom: 1px solid var(--line-soft); padding: 19px 0; display: grid; gap: 11px; }
+.advanced-panel h2 { margin: 0; font: 700 20px/1.2 var(--font-heading); }
+.advanced-panel p { margin: 0; color: var(--muted); font-size: 17px; max-width: 650px; }
+.advanced-panel form { display: grid; gap: 8px; max-width: 650px; }
+.advanced-panel form > label { color: var(--muted); font-size: 13px; }
+.inline-fields { display: flex; flex-wrap: wrap; gap: 8px; }
+.inline-fields .field-control { flex: 1 1 260px; }
+.toggle-setting { display: flex; align-items: center; gap: 9px; font-size: 15px; }
+.toggle-setting input { accent-color: var(--haiti-blue); }
+.agent-config { width: min(720px, 80vw); font: 13px/1.5 var(--font-meta); }
+.section-desc { color: var(--muted); font-size: 17px; line-height: 1.55; }
+body { font-size: 17px; }
+.settings-section .section-desc, .server-notice { font-size: 17px; }
+.row-meta, .section-kicker, .list-heading, .row-status, .next-post-mark,
+.library-file small, .calendar-weekday, .day-number, .event-time,
+.integration-status, .side-label, .version, .sidebar-foot, .channel-state,
+.github-source-meta, .library-source, .settings-message, .app-footer, .toast,
+.crumb, .crumb-slash, .day-option span, .channel-line, .nav-count { font-size: 13px; }
+.form-field label, .library-edit label, .text-action, .variants-details summary,
+.github-source-form label, .calendar-event, .calendar-event .event-time {
+  font-size: 13px;
+}
+.row-title, .button, .nav-item, .library-file, .upload-copy strong,
+.account-chip, .connected-block h3, .integration-name { font-size: 15px; }
+.button-small { font-size: 13px; }
+.page-heading p, .workflow-note, .row-caption, .empty-state p, .empty-inline,
+.error-panel p, .library-toolbar p, .upload-copy span, .connected-block p,
+.side-explainer, .dialog-intro { font-size: 17px; }
+.field-control { font-size: 15px; }
+.queue-row { grid-template-columns: 48px minmax(0, 1fr) 160px 150px; }
+@media (max-width: 760px) {
+  .first-run { grid-template-columns: 1fr; min-height: 0; }
+  .first-run-actions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
