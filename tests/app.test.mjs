@@ -282,6 +282,21 @@ test('Final Cog local app, scheduler, and TikTok inbox flow', async t => {
     const [media] = (await uploaded.json()).items;
     assert.equal(media.filename, 'sample.mp4');
 
+    const fullFile = await call(`/api/videos/${media.id}/file`);
+    assert.equal(fullFile.status, 200);
+    assert.equal(fullFile.headers.get('accept-ranges'), 'bytes');
+    assert.deepEqual([...new Uint8Array(await fullFile.arrayBuffer())], [0, 1, 2, 3, 4]);
+    const partFile = await call(`/api/videos/${media.id}/file`, { headers: { Range: 'bytes=1-2' } });
+    assert.equal(partFile.status, 206);
+    assert.equal(partFile.headers.get('content-range'), 'bytes 1-2/5');
+    assert.deepEqual([...new Uint8Array(await partFile.arrayBuffer())], [1, 2]);
+    const badRange = await call(`/api/videos/${media.id}/file`, { headers: { Range: 'bytes=9-' } });
+    assert.equal(badRange.status, 416);
+    const missingFile = await call('/api/videos/00000000-0000-0000-0000-000000000000/file');
+    assert.equal(missingFile.status, 404);
+    const signedOutFile = await call(`/api/videos/${media.id}/file`, { auth: false, apiToken: false });
+    assert.equal(signedOutFile.status, 401);
+
     const saved = await call(`/api/library/${media.id}`, {
       method: 'PATCH',
       json: {
