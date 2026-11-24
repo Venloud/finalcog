@@ -1,1 +1,2 @@
 - [Scroll-driven cog motion](scroll-driven-cog-motion.md) — coalesce scroll-driven rotation to one animation-frame update, with counter-rotation and visible gear markers.
+- [SQLite native builds on Replit](sqlite-native-builds.md) — rebuild better-sqlite3 from source when its Linux prebuild needs a newer glibc.
