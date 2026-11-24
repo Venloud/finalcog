@@ -7,7 +7,7 @@
   const notice = document.getElementById("server-notice");
   const isStaticGithubPages = location.hostname.endsWith("github.io");
   const pages = { queue: "Queue", calendar: "Calendar", library: "Library", accounts: "Accounts", settings: "Settings" };
-  const state = { activeView: "queue", session: null, queue: [], library: [], settings: null, advanced: null, accounts: null, month: new Date(), busy: false, openAdvanced: false };
+  const state = { activeView: "queue", session: null, queue: [], library: [], settings: null, advanced: null, accounts: null, month: new Date(), busy: false, openAdvanced: false, previewPlatform: localStorage.getItem("fc-preview-platform") === "instagram" ? "instagram" : "tiktok" };
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const fullDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const demoSamples = [
@@ -40,6 +40,46 @@
     }));
   }
   const demoBanner = `<div class="demo-data-banner"><span class="demo-data-chip">DEMO DATA</span><span>Sample videos · nothing has been uploaded</span></div>`;
+
+  // Phone preview: shows how a post will look on TikTok or Instagram while the caption is edited.
+  const previewHandle = () => {
+    const account = state.session?.account;
+    return (account?.username || account?.displayName || "yourname").replace(/^@/, "");
+  };
+  const previewDate = value => new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(value ? new Date(value) : new Date());
+  function phonePreview({ mediaId = "", caption = "", hashtags = "", when = "" } = {}) {
+    const platform = state.previewPlatform;
+    const handle = previewHandle();
+    const tab = (value, label) => `<button type="button" class="preview-tab" data-action="preview-platform" data-platform="${value}" aria-pressed="${platform === value}">${label}</button>`;
+    const media = mediaId && !String(mediaId).startsWith("demo-")
+      ? `<video class="pv-video" src="/api/videos/${encodeURIComponent(mediaId)}/file#t=0.5" muted playsinline preload="metadata" aria-hidden="true"></video>`
+      : `<span class="pv-placeholder">${icon("video")}</span>`;
+    return `<figure class="phone-preview" data-platform="${platform}" aria-label="Post preview">
+      <div class="preview-tabs">${tab("tiktok", "TikTok")}${tab("instagram", "Instagram")}</div>
+      <div class="phone"><div class="phone-screen">
+        <div class="phone-status"><span>9:41</span><span class="phone-island"></span><span class="phone-battery"></span></div>
+        <div class="ig-bar"><span class="pv-avatar">${esc(handle.charAt(0).toUpperCase())}</span><span class="pv-handle">${esc(handle)}</span><span class="pv-more">•••</span></div>
+        <div class="pv-media">${media}</div>
+        <div class="ig-actions">${icon("heart")}${icon("comment")}${icon("send")}<span class="ig-save">${icon("bookmark")}</span></div>
+        <div class="tt-rail"><span class="pv-avatar">${esc(handle.charAt(0).toUpperCase())}</span>${icon("heart")}${icon("comment")}${icon("bookmark")}${icon("share")}</div>
+        <figcaption class="pv-text"><strong class="pv-handle">${esc(handle)}</strong> <span class="pv-caption">${esc(caption)}</span> <span class="pv-tags">${esc(hashtags)}</span></figcaption>
+        <span class="pv-date">${esc(previewDate(when))}</span>
+      </div></div>
+    </figure>`;
+  }
+  function updatePreview(scope, values) {
+    const preview = scope?.querySelector(".phone-preview");
+    if (!preview) return;
+    if ("caption" in values) preview.querySelector(".pv-caption").textContent = values.caption;
+    if ("hashtags" in values) preview.querySelector(".pv-tags").textContent = values.hashtags;
+    if ("when" in values) preview.querySelector(".pv-date").textContent = previewDate(values.when);
+    if ("mediaId" in values) {
+      const holder = preview.querySelector(".pv-media");
+      holder.innerHTML = values.mediaId
+        ? `<video class="pv-video" src="/api/videos/${encodeURIComponent(values.mediaId)}/file#t=0.5" muted playsinline preload="metadata" aria-hidden="true"></video>`
+        : `<span class="pv-placeholder">${icon("video")}</span>`;
+    }
+  }
 
   async function api(path, options = {}) {
     const init = { method: options.method || "GET", headers: {}, credentials: "same-origin" };
@@ -193,13 +233,13 @@
       <article class="library-item demo-library-item">
         <div class="file-cover">${icon("video")}</div>
         <div class="library-file"><strong>${esc(item.filename)}</strong><small>Demo data · sample video</small></div>
-        <div class="demo-caption"><span>Caption</span><p>${esc(item.caption)} ${esc(item.hashtags)}</p><span>${item.platforms.map(titleCase).join(" · ")}</span></div>
-        <span class="demo-data-chip">DEMO</span>
+        <div class="demo-caption"><span>Caption</span><p>${esc(item.caption)} ${esc(item.hashtags)}</p><span class="demo-data-chip">DEMO</span></div>
+        ${phonePreview({ mediaId: item.mediaId, caption: item.caption, hashtags: item.hashtags, when: item.scheduledAt })}
       </article>`).join("") : "";
-    view.innerHTML = `<div class="page-heading"><div><h1>Video library</h1><p>Upload once. Keep a caption for each channel.</p></div></div>
-      <div class="upload-zone" id="upload-zone"><div class="upload-symbol">${icon("upload")}</div><div class="upload-copy"><strong>Drop finished videos here</strong><span>Choose one or more video files to upload to your library.</span></div><input type="file" id="file-input" accept="video/*" multiple hidden><button class="button button-accent" data-action="pick-files">Choose files</button></div>
+    view.innerHTML = `<div class="page-heading"><div><h1>Video library</h1></div></div>
+      <div class="upload-zone" id="upload-zone"><div class="upload-symbol">${icon("upload")}</div><div class="upload-copy"><strong>Drop finished videos here</strong></div><input type="file" id="file-input" accept="video/*" multiple hidden><button class="button button-accent" data-action="pick-files">Choose files</button></div>
       <section class="github-import" aria-labelledby="github-import-title">
-        <div class="github-import-head"><div><h2 id="github-import-title">Import from GitHub</h2><p>Find recent video assets in a repository release or Actions run.</p></div><span class="section-kicker">LOCAL COPY / SOURCE RECORDED</span></div>
+        <div class="github-import-head"><div><h2 id="github-import-title">Import from GitHub</h2></div></div>
         <form id="github-source-form" class="github-source-form">
           <label>Owner<input name="owner" maxlength="100" placeholder="owner" required></label>
           <label>Repository<input name="repo" maxlength="100" placeholder="repository" required></label>
@@ -208,9 +248,8 @@
         <div class="github-source-results" id="github-source-results" aria-live="polite"></div>
       </section>
       ${demoMode ? demoBanner : ""}
-      <div class="library-toolbar"><p>${demoMode ? "4 sample videos" : state.library.length ? `${state.library.length} ${state.library.length === 1 ? "video" : "videos"} in your library` : "Your uploaded videos will appear here."}</p><span class="section-kicker">CAPTION / HASHTAGS CAN BE EDITED ANYTIME</span></div>
-      ${demoMode ? `<div class="library-list">${sampleRows}</div>` : state.library.length ? `<div class="library-list">${state.library.map(libraryItem).join("")}</div>` : `<div class="empty-state">${emptyMachine()}<h2>Your library is clear</h2><p>Start with finished, export-ready videos. Each upload stays here until you schedule it or remove it.</p></div>`}
-      <div class="privacy-line">Your files stay on this computer.</div>`;
+      ${demoMode || state.library.length ? `<div class="library-toolbar"><p>${demoMode ? "4 sample videos" : `${state.library.length} ${state.library.length === 1 ? "video" : "videos"}`}</p></div>` : ""}
+      ${demoMode ? `<div class="library-list">${sampleRows}</div>` : state.library.length ? `<div class="library-list">${state.library.map(libraryItem).join("")}</div>` : `<div class="empty-state">${emptyMachine()}<h2>Your library is clear</h2></div>`}`;
     const zone = document.getElementById("upload-zone");
     ["dragenter", "dragover"].forEach(type => zone.addEventListener(type, event => {
       event.preventDefault();
@@ -247,9 +286,9 @@
           <textarea id="instagram-${esc(item.id)}" class="field-control variant-input" data-platform="instagram" rows="2" maxlength="2200" placeholder="Optional Instagram caption">${esc(variants.instagram || "")}</textarea>
           <label for="youtube-${esc(item.id)}">YouTube Shorts</label>
           <textarea id="youtube-${esc(item.id)}" class="field-control variant-input" data-platform="youtube" rows="2" maxlength="2200" placeholder="Optional YouTube caption">${esc(variants.youtube || "")}</textarea>
-          <span class="section-kicker">Saved here until those channels are ready.</span>
         </div></details>
       </div>
+      ${phonePreview({ mediaId: item.id, caption: item.caption || variants.tiktok || "", hashtags: item.hashtags || "" })}
       <div class="library-tools"><button class="text-action" data-action="draft-captions" data-id="${esc(item.id)}">Write a caption for me</button><button class="text-action" data-action="save-library" data-id="${esc(item.id)}">Save</button><button class="text-action" data-action="schedule-library" data-id="${esc(item.id)}">Schedule</button><button class="text-action" data-action="delete-library" data-id="${esc(item.id)}">Remove</button></div>
     </article>`;
   }
@@ -273,21 +312,21 @@
     }
     const results = document.getElementById("github-source-results");
     if (!options.length) {
-      results.innerHTML = `<p class="github-import-empty">No video assets or unexpired Actions artifacts were found in that repository.</p>`;
+      results.innerHTML = `<p class="github-import-empty">No videos found.</p>`;
       return;
     }
     results.innerHTML = `<label class="section-kicker" for="github-source-choice">RECENT VIDEO SOURCES</label>
       <select class="github-source-choice" id="github-source-choice">${options.map(option =>
         `<option value="${esc(encodeURIComponent(JSON.stringify(option.request)))}">${esc(option.label)}</option>`
       ).join("")}</select>
-      <div class="github-source-meta">${options.length} source${options.length === 1 ? "" : "s"} available. Imports are copied into this creator's local library.</div>
+      <div class="github-source-meta">${options.length} source${options.length === 1 ? "" : "s"}</div>
       <div class="github-import-actions"><button class="button button-accent" data-action="import-github">Import selected video</button></div>`;
   }
   async function loadGithubSources(form) {
     const results = document.getElementById("github-source-results");
     const owner = form.elements.owner.value.trim();
     const repo = form.elements.repo.value.trim();
-    results.innerHTML = `<p class="github-import-empty">Loading repository releases and recent workflow artifacts…</p>`;
+    results.innerHTML = `<p class="github-import-empty">Searching…</p>`;
     try {
       const query = new URLSearchParams({ owner, repo });
       githubChoices(await api(`/api/github/sources?${query}`));
@@ -342,7 +381,7 @@
     return names.map(n => `<option value="${esc(n)}" ${n === current ? "selected" : ""}>${esc(n.replaceAll("_", " "))}</option>`).join("");
   }
 
-  function openDialog(markup) { dialogContent.innerHTML = markup; dialog.showModal(); }
+  function openDialog(markup, wide = false) { dialog.classList.toggle("dialog-wide", wide); dialogContent.innerHTML = markup; dialog.showModal(); }
   function closeDialog() { if (dialog.open) dialog.close(); }
   function openTikTokSetup() {
     openDialog(`<h2>Connect TikTok</h2><p class="dialog-intro">Add your TikTok developer app details once. Final Cog encrypts them on this computer.</p>
@@ -357,13 +396,17 @@
   function openSchedule(item) {
     const editing = !!item?.id;
     const videos = state.library;
-    openDialog(`<h2>${editing ? "Edit scheduled video" : "Schedule a video"}</h2><p class="dialog-intro">Choose when Final Cog should send this video to TikTok drafts.</p>
-      <form id="schedule-form" data-edit-id="${editing ? esc(item.id) : ""}"><div class="dialog-fields">
+    const previewMedia = item?.mediaId || (!editing ? videos[0]?.id : "") || "";
+    const previewCaption = item?.caption || (!editing ? (videos[0]?.caption || "") : "");
+    const previewTags = item?.hashtags || (!editing ? (videos[0]?.hashtags || "") : "");
+    openDialog(`<h2>${editing ? "Edit scheduled video" : "Schedule a video"}</h2>
+      <div class="schedule-layout"><form id="schedule-form" data-edit-id="${editing ? esc(item.id) : ""}"><div class="dialog-fields">
         ${editing ? `<input type="hidden" name="mediaId" value="${esc(item.mediaId || "")}"><div class="form-field"><label>Video</label><div class="field-control">${esc(item.filename || "Selected video")}</div></div>` : `<div class="form-field"><label for="schedule-media">Video</label><select class="field-control" id="schedule-media" name="mediaId" required>${videos.map(v => `<option value="${esc(v.id)}">${esc(v.filename)}</option>`).join("")}</select></div>`}
         <div class="form-field"><label for="schedule-caption">Caption</label><textarea class="field-control" id="schedule-caption" name="caption" rows="3">${esc(item?.caption || (!editing ? (videos[0]?.caption || "") : ""))}</textarea></div>
         <div class="form-field"><label for="schedule-hashtags">Hashtags</label><input class="field-control" id="schedule-hashtags" name="hashtags" value="${esc(item?.hashtags || (!editing ? (videos[0]?.hashtags || "") : ""))}" placeholder="#yourtags"></div>
         <div class="form-field"><label for="schedule-at">Send to drafts at</label><input class="field-control" id="schedule-at" name="scheduledAt" type="datetime-local" value="${esc(item?.scheduledAt ? toLocalInput(item.scheduledAt) : "")}" required><button type="button" class="text-action" data-action="suggest-time">Suggest a time</button><span id="suggestion-reason" class="section-desc"></span></div></div>
-        <div class="dialog-actions"><button type="button" class="button button-small" data-action="close-dialog">Cancel</button><button type="submit" class="button button-accent">${editing ? "Save changes" : "Add to queue"}</button></div></form>`);
+        <div class="dialog-actions"><button type="button" class="button button-small" data-action="close-dialog">Cancel</button><button type="submit" class="button button-accent">${editing ? "Save changes" : "Add to queue"}</button></div></form>
+      ${phonePreview({ mediaId: previewMedia, caption: previewCaption, hashtags: previewTags, when: item?.scheduledAt })}</div>`, true);
   }
   function toLocalInput(value) { const d = new Date(value); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 
@@ -431,6 +474,15 @@
     const action = button.dataset.action;
     const id = button.dataset.id;
     try {
+      if (action === "preview-platform") {
+        state.previewPlatform = button.dataset.platform === "instagram" ? "instagram" : "tiktok";
+        localStorage.setItem("fc-preview-platform", state.previewPlatform);
+        document.querySelectorAll(".phone-preview").forEach(preview => {
+          preview.dataset.platform = state.previewPlatform;
+          preview.querySelectorAll(".preview-tab").forEach(tab => tab.setAttribute("aria-pressed", String(tab.dataset.platform === state.previewPlatform)));
+        });
+        return;
+      }
       if (action === "reload-view") await loadView();
       else if (action === "go-library") setActive("library");
       else if (action === "connect-tiktok") {
@@ -597,6 +649,7 @@
           }
           if (platform === "tiktok" && hashtags) row.querySelector(".hashtags-input").value = hashtags.value;
         });
+        updatePreview(row, { caption: row.querySelector(".caption-input").value, hashtags: row.querySelector(".hashtags-input").value });
       }
       closeDialog();
       showToast("Caption drafts added for review. Save the video to keep them.");
@@ -652,8 +705,24 @@
     if (event.target.id === "schedule-media") {
       const item = findLibrary(event.target.value);
       if (item) { document.getElementById("schedule-caption").value = item.caption || ""; document.getElementById("schedule-hashtags").value = item.hashtags || ""; }
+      updatePreview(dialogContent, { mediaId: event.target.value, caption: item?.caption || "", hashtags: item?.hashtags || "" });
     }
+    if (event.target.id === "schedule-at" && event.target.value) updatePreview(dialogContent, { when: event.target.value });
   });
+  document.addEventListener("input", event => {
+    const target = event.target;
+    const row = target.closest(".library-item");
+    if (row && target.classList.contains("caption-input")) updatePreview(row, { caption: target.value });
+    else if (row && target.classList.contains("hashtags-input")) updatePreview(row, { hashtags: target.value });
+    else if (target.id === "schedule-caption") updatePreview(dialogContent, { caption: target.value });
+    else if (target.id === "schedule-hashtags") updatePreview(dialogContent, { hashtags: target.value });
+  });
+  // A video that cannot be read falls back to the plain placeholder.
+  document.addEventListener("error", event => {
+    if (event.target instanceof HTMLVideoElement && event.target.classList.contains("pv-video")) {
+      event.target.replaceWith(Object.assign(document.createElement("span"), { className: "pv-placeholder", innerHTML: icon("video") }));
+    }
+  }, true);
   document.getElementById("mobile-menu").addEventListener("click", event => {
     const open = !document.querySelector(".sidebar").classList.contains("open");
     document.querySelector(".sidebar").classList.toggle("open", open);
