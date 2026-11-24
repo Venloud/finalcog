@@ -403,3 +403,82 @@ body { font-size: 17px; }
   .github-source-form { grid-template-columns: 1fr; }
   .github-source-form button { justify-self: start; }
 }
+
+/* Phone post preview */
+.phone-preview { margin: 0; width: 200px; display: grid; gap: 10px; justify-items: center; }
+.preview-tabs { display: inline-flex; border: 1px solid var(--line); }
+.preview-tab { min-height: 30px; padding: 4px 11px; border: 0; background: transparent; color: var(--muted); font: 500 12px/1 var(--font-meta); cursor: pointer; }
+.preview-tab[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+.phone { width: 200px; aspect-ratio: 9 / 19; padding: 7px; border-radius: 32px; background: #1a252d; border: 1px solid #33424c; box-shadow: 0 18px 40px #00000080; }
+.phone-screen { position: relative; height: 100%; display: flex; flex-direction: column; overflow: hidden; border-radius: 25px; background: #121212; color: #fff; font: 10.5px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.phone-screen svg { width: 15px; height: 15px; stroke-width: 1.9; }
+.phone-status { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: center; padding: 8px 15px 5px; font-size: 9.5px; font-weight: 600; }
+.phone-island { width: 46px; height: 13px; border-radius: 8px; background: #000; }
+.phone-battery { position: relative; width: 16px; height: 8px; border: 1px solid #ffffffcc; border-radius: 2px; }
+.phone-battery::after { content: ""; position: absolute; inset: 1px 4px 1px 1px; background: #fff; border-radius: 1px; }
+.pv-avatar { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--haiti-blue); box-shadow: 0 0 0 1.5px #121212, 0 0 0 3px var(--haiti-red); font-size: 10px; font-weight: 700; }
+.pv-media { position: relative; overflow: hidden; background: linear-gradient(160deg, #163a63, #0a1726); }
+.pv-video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pv-placeholder { display: grid; place-items: center; width: 100%; height: 100%; color: #ffffff55; }
+.phone-screen .pv-placeholder svg { width: 28px; height: 28px; }
+.pv-caption:empty::before { content: "Your caption"; opacity: .5; }
+.pv-tags { font-weight: 600; }
+.pv-text { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.pv-date { color: #a8a8a8; font-size: 9px; }
+
+/* Instagram look */
+.phone-preview[data-platform="instagram"] .tt-rail { display: none; }
+.ig-bar { display: flex; align-items: center; gap: 7px; padding: 6px 10px; }
+.ig-bar .pv-handle { font-weight: 600; }
+.pv-more { margin-left: auto; letter-spacing: 1px; }
+.phone-preview[data-platform="instagram"] .pv-media { aspect-ratio: 4 / 5; flex: none; }
+.ig-actions { display: flex; align-items: center; gap: 11px; padding: 8px 10px 5px; }
+.ig-save { margin-left: auto; }
+.phone-preview[data-platform="instagram"] .pv-text { padding: 0 10px; }
+.phone-preview[data-platform="instagram"] .pv-tags { color: #c3dcff; font-weight: 400; }
+.phone-preview[data-platform="instagram"] .pv-date { padding: 3px 10px 0; }
+
+/* TikTok look: full-screen video, caption over it, icon rail on the right */
+.phone-preview[data-platform="tiktok"] .ig-bar,
+.phone-preview[data-platform="tiktok"] .ig-actions,
+.phone-preview[data-platform="tiktok"] .pv-date { display: none; }
+.phone-preview[data-platform="tiktok"] .pv-media { position: absolute; inset: 0; }
+.phone-preview[data-platform="tiktok"] .pv-media::after { content: ""; position: absolute; inset: 55% 0 0; background: linear-gradient(transparent, #000000b3); }
+.tt-rail { position: absolute; z-index: 2; right: 8px; bottom: 58px; display: grid; justify-items: center; gap: 13px; filter: drop-shadow(0 1px 2px #000a); }
+.tt-rail svg { width: 19px; height: 19px; }
+.tt-rail .pv-avatar { margin-bottom: 3px; }
+.phone-preview[data-platform="tiktok"] .pv-text { position: absolute; z-index: 2; left: 10px; right: 46px; bottom: 16px; text-shadow: 0 1px 2px #000c; }
+.phone-preview[data-platform="tiktok"] .pv-text .pv-handle { display: block; margin-bottom: 2px; }
+.phone-preview[data-platform="tiktok"] .pv-text .pv-handle::before { content: "@"; }
+
+/* Library rows: details, caption editor, then the phone */
+.library-item {
+  grid-template-columns: 52px minmax(140px, .6fr) minmax(230px, 1fr) 200px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "cover file edit phone" "cover file tools phone";
+}
+.library-item .file-cover { grid-area: cover; }
+.library-item .library-file { grid-area: file; }
+.library-item .library-edit, .library-item .demo-caption { grid-area: edit; }
+.library-item .library-tools { grid-area: tools; justify-content: flex-start; flex-wrap: wrap; }
+.library-item .phone-preview { grid-area: phone; }
+.demo-caption .demo-data-chip { justify-self: start; }
+
+/* Schedule window: form left, phone right */
+.dialog.dialog-wide { width: min(800px, calc(100vw - 30px)); max-height: calc(100dvh - 30px); overflow: auto; }
+.schedule-layout { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 30px; align-items: start; }
+
+@media (max-width: 900px) {
+  .library-item {
+    grid-template-columns: 45px minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: "cover file" ". edit" ". tools" ". phone";
+  }
+  .library-item .phone-preview { justify-self: start; }
+}
+@media (max-width: 680px) {
+  .library-item { grid-template-areas: "cover file" "edit edit" "tools tools" "phone phone"; }
+  .library-item .phone-preview { justify-self: center; }
+  .schedule-layout { grid-template-columns: 1fr; }
+  .schedule-layout .phone-preview { justify-self: center; }
+}

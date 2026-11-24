@@ -62,7 +62,7 @@
         <div class="pv-media">${media}</div>
         <div class="ig-actions">${icon("heart")}${icon("comment")}${icon("send")}<span class="ig-save">${icon("bookmark")}</span></div>
         <div class="tt-rail"><span class="pv-avatar">${esc(handle.charAt(0).toUpperCase())}</span>${icon("heart")}${icon("comment")}${icon("bookmark")}${icon("share")}</div>
-        <figcaption class="pv-text"><strong class="pv-handle">${esc(handle)}</strong> <span class="pv-caption">${esc(caption)}</span> <span class="pv-tags">${esc(hashtags)}</span></figcaption>
+        <div class="pv-text"><strong class="pv-handle">${esc(handle)}</strong> <span class="pv-caption">${esc(caption)}</span> <span class="pv-tags">${esc(hashtags)}</span></div>
         <span class="pv-date">${esc(previewDate(when))}</span>
       </div></div>
     </figure>`;
@@ -155,7 +155,7 @@
   }
   function queueHeading(items = state.queue) {
     const scheduled = items.filter(x => ["Queued", "Sending"].includes(x.status)).length;
-    return `<div class="page-heading"><div><h1>Your queue</h1><p>Next up for TikTok drafts.</p></div><div class="page-actions"><button class="button button-muted" data-action="open-schedule">${icon("calendar")}<span>Schedule a video</span></button><button class="button button-accent" data-action="go-library">${icon("plus")}<span>Add videos</span></button></div></div>
+    return `<div class="page-heading"><div><h1>Your queue</h1></div><div class="page-actions"><button class="button button-muted" data-action="open-schedule">${icon("calendar")}<span>Schedule a video</span></button><button class="button button-accent" data-action="go-library">${icon("plus")}<span>Add videos</span></button></div></div>
       <div class="list-heading"><span>${scheduled ? `${scheduled} IN THE UPCOMING QUEUE` : "UPCOMING QUEUE"}</span><span>STATUS / ACTIONS</span></div>`;
   }
   function renderQueue() {
@@ -164,8 +164,8 @@
     const count = items.filter(x => ["Queued", "Sending"].includes(x.status)).length;
     const badge = document.getElementById("queue-count"); badge.textContent = count; badge.hidden = !count;
     const welcome = !state.session?.account ? `<section class="first-run" aria-labelledby="first-run-title">
-      <div class="first-run-copy"><span class="section-kicker">LOCAL WORKSPACE</span><h1 id="first-run-title">Connect your accounts.</h1><p>Start with TikTok, then add finished videos.</p><p class="privacy-line">Your data stays on this computer.</p></div>
-      <div class="first-run-actions"><button class="button button-accent" data-action="connect-tiktok">Connect TikTok</button><button class="button button-muted" data-action="go-library">Upload videos</button><span class="coming-soon">Instagram and YouTube are coming soon.</span></div>
+      <div class="first-run-copy"><h1 id="first-run-title">Connect your accounts.</h1></div>
+      <div class="first-run-actions"><button class="button button-accent" data-action="connect-tiktok">Connect TikTok</button><button class="button button-muted" data-action="go-library">Upload videos</button></div>
     </section>` : "";
     if (demoMode) {
       const sorted = queueSort(items);
@@ -174,7 +174,7 @@
       return;
     }
     if (!items.length) {
-      view.innerHTML = `${welcome}${welcome ? "" : queueHeading()}<div class="empty-state">${emptyMachine()}<h2>${welcome ? "Your workspace is ready" : "Nothing in the queue yet"}</h2><p>${welcome ? "Upload finished videos whenever you are ready." : "Upload videos, choose a posting time, and review each TikTok draft before it goes public."}</p>${welcome ? "" : `<button class="button button-accent" data-action="go-library">${icon("upload")}<span>Upload videos</span></button>`}</div>`;
+      view.innerHTML = `${welcome}${welcome ? "" : queueHeading()}<div class="empty-state">${emptyMachine()}<h2>${welcome ? "Your workspace is ready" : "Nothing in the queue yet"}</h2>${welcome ? "" : `<button class="button button-accent" data-action="go-library">${icon("upload")}<span>Upload videos</span></button>`}</div>`;
       return;
     }
     const sorted = queueSort(items);
@@ -224,7 +224,7 @@
       const dayItems = events.get(key) || [];
       return `<div class="calendar-day${date.getMonth() !== month.getMonth() ? " outside" : ""}"><div class="day-number${today ? " today" : ""}">${date.getDate()}</div>${dayItems.map(item => `<div class="calendar-event${item.status === "Failed" ? " failed" : ""}" title="${esc(item.filename)}">${esc(item.filename || "Video")}<div class="event-time">${esc(new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(item.scheduledAt)))}</div></div>`).join("")}</div>`;
     }).join("");
-    view.innerHTML = `<div class="page-heading"><div><h1>Calendar</h1><p>See where each video lands in your posting rhythm.</p></div><div class="calendar-toolbar"><button class="button button-small" data-action="month-prev" aria-label="Previous month">‹</button><h2>${esc(monthLabel)}</h2><button class="button button-small" data-action="month-next" aria-label="Next month">›</button><button class="button button-small button-muted" data-action="month-today">Today</button></div></div>
+    view.innerHTML = `<div class="page-heading"><div><h1>Calendar</h1></div><div class="calendar-toolbar"><button class="button button-small" data-action="month-prev" aria-label="Previous month">‹</button><h2>${esc(monthLabel)}</h2><button class="button button-small" data-action="month-next" aria-label="Next month">›</button><button class="button button-small button-muted" data-action="month-today">Today</button></div></div>
       ${demoMode ? demoBanner : ""}<div class="calendar-grid">${weekday}${cells}</div>`;
   }
   function renderLibrary() {
@@ -337,35 +337,35 @@
   function renderAccounts() {
     const t = state.accounts?.tiktok;
     const avatar = t?.avatarUrl ? `<img src="${esc(t.avatarUrl)}" alt="">` : esc((t?.displayName || "T").trim().charAt(0).toUpperCase());
-    view.innerHTML = `<div class="page-heading"><div><h1>Accounts</h1><p>Connect the channel that receives your finished videos.</p></div></div>
+    view.innerHTML = `<div class="page-heading"><div><h1>Accounts</h1></div></div>
       <div class="account-layout"><section><div class="section-kicker">ACTIVE INTEGRATION</div>
         ${t ? `<div class="connected-block"><div class="account-avatar">${avatar}</div><div><h3>${esc(t.displayName || "TikTok account")}</h3><p>${t.username ? `@${esc(t.username)} · ` : ""}Connected ${esc(fmtDate(t.connectedAt))}</p></div><div class="account-actions"><button class="button button-small button-plain" data-action="disconnect">Disconnect</button></div></div>` : `<div class="connected-block"><div class="account-avatar" aria-hidden="true">T</div><div><h3>TikTok</h3><p>Not connected yet</p></div><button class="button button-small button-accent" style="margin-left:auto" data-action="connect-tiktok">Connect</button></div>`}
         <div class="integration-list"><div class="integration-row"><span class="integration-name">TikTok</span><span class="integration-status ${t ? "active" : ""}">${t ? "Connected" : "Ready to connect"}</span></div>
           <div class="integration-row"><span class="integration-name">YouTube Shorts</span><span class="integration-status">Coming soon</span></div>
           <div class="integration-row"><span class="integration-name">Instagram Reels</span><span class="integration-status">Coming soon</span></div>
           <div class="integration-row"><span class="integration-name">Twitch</span><span class="integration-status">Coming later</span></div></div>
-      </section><aside class="side-explainer"><strong>Your final step stays yours.</strong>Final Cog places videos in your TikTok inbox drafts. Review the draft, add any finishing touches, and publish from TikTok when you're ready.<p>No public auto-posting is performed by this app.</p></aside></div>`;
+      </section><aside class="side-explainer"><strong>You press publish.</strong>Videos land in your TikTok drafts.</aside></div>`;
   }
   function renderSettings() {
     const s = state.settings;
     const advancedWasOpen = state.openAdvanced || Boolean(view.querySelector(".advanced-settings")?.open);
     const days = (s.activeDays || []).map(Number);
     const times = s.preferredTimes?.length ? s.preferredTimes : [""];
-    view.innerHTML = `<div class="page-heading"><div><h1>Posting cadence</h1><p>Set the pace you want to keep. Fill the queue when you're ready to use these preferences.</p></div></div>
+    view.innerHTML = `<div class="page-heading"><div><h1>Posting cadence</h1></div></div>
       <form id="settings-form" class="settings-form">
-        <section class="settings-section"><div><h2>Weekly pace</h2><p class="section-desc">How many videos to schedule in a typical week.</p></div><div class="settings-controls"><div class="form-field"><label for="posts-per-week">Videos per week</label><input class="field-control" type="number" id="posts-per-week" min="1" max="21" value="${esc(s.postsPerWeek ?? 3)}" required></div></div></section>
-        <section class="settings-section"><div><h2>Active days</h2><p class="section-desc">Choose the days you want videos sent to drafts.</p></div><div class="settings-controls"><div class="days-list">${dayNames.map((d, i) => `<label class="day-option"><input type="checkbox" name="activeDays" value="${i}" ${days.includes(i) ? "checked" : ""}><span>${d}</span></label>`).join("")}</div></div></section>
-        <section class="settings-section"><div><h2>Preferred times</h2><p class="section-desc">Local times for your selected days.</p></div><div class="settings-controls"><div class="times-list" id="times-list">${times.map((t, i) => `<div class="time-entry"><input class="field-control preferred-time" type="time" value="${esc(t)}" aria-label="Preferred time ${i + 1}"><button type="button" class="remove-time" data-action="remove-time" aria-label="Remove preferred time">−</button></div>`).join("")}</div><button type="button" class="text-action" data-action="add-time">Add a time</button></div></section>
-        <section class="settings-section"><div><h2>Spacing</h2><p class="section-desc">At least 20 hours between posts to each channel.</p></div><div class="settings-controls"><div class="form-field"><label for="spacing">Minimum spacing</label><input class="field-control" type="number" id="spacing" min="20" max="168" value="${esc(s.minSpacingHours ?? 20)}" required></div><div class="form-field"><label for="timezone">Timezone</label><select class="field-control" id="timezone">${timezoneOptions(s.timezone)}</select></div></div></section>
-        <section class="settings-section"><div><h2>Best times</h2><p class="section-desc">Hours that work well for your audience, 0–23.</p></div><div class="settings-controls"><div class="form-field"><label for="best-hours-tiktok">TikTok hours</label><input class="field-control" name="bestHoursTikTok" id="best-hours-tiktok" value="${esc((s.bestHours?.tiktok || []).join(", "))}" placeholder="Example: 9, 12, 18"></div><p class="section-desc">Used for suggestions when saved. Otherwise Final Cog uses its default posting windows.</p></div></section>
+        <section class="settings-section"><div><h2>Weekly pace</h2></div><div class="settings-controls"><div class="form-field"><label for="posts-per-week">Videos per week</label><input class="field-control" type="number" id="posts-per-week" min="1" max="21" value="${esc(s.postsPerWeek ?? 3)}" required></div></div></section>
+        <section class="settings-section"><div><h2>Active days</h2></div><div class="settings-controls"><div class="days-list">${dayNames.map((d, i) => `<label class="day-option"><input type="checkbox" name="activeDays" value="${i}" ${days.includes(i) ? "checked" : ""}><span>${d}</span></label>`).join("")}</div></div></section>
+        <section class="settings-section"><div><h2>Preferred times</h2></div><div class="settings-controls"><div class="times-list" id="times-list">${times.map((t, i) => `<div class="time-entry"><input class="field-control preferred-time" type="time" value="${esc(t)}" aria-label="Preferred time ${i + 1}"><button type="button" class="remove-time" data-action="remove-time" aria-label="Remove preferred time">−</button></div>`).join("")}</div><button type="button" class="text-action" data-action="add-time">Add a time</button></div></section>
+        <section class="settings-section"><div><h2>Spacing</h2></div><div class="settings-controls"><div class="form-field"><label for="spacing">Minimum spacing</label><input class="field-control" type="number" id="spacing" min="20" max="168" value="${esc(s.minSpacingHours ?? 20)}" required></div><div class="form-field"><label for="timezone">Timezone</label><select class="field-control" id="timezone">${timezoneOptions(s.timezone)}</select></div></div></section>
+        <section class="settings-section"><div><h2>Best times</h2></div><div class="settings-controls"><div class="form-field"><label for="best-hours-tiktok">TikTok hours (0–23)</label><input class="field-control" name="bestHoursTikTok" id="best-hours-tiktok" value="${esc((s.bestHours?.tiktok || []).join(", "))}" placeholder="9, 12, 18"></div></div></section>
         <div class="settings-bottom"><button type="submit" class="button button-accent">Save cadence</button><button type="button" class="button button-muted" data-action="fill-schedule">Fill queue from library</button><span class="settings-message" id="settings-message" role="status"></span></div>
       </form>
       <details class="advanced-settings"><summary>Advanced</summary>
-        <section class="advanced-panel"><h2>Connect an AI agent</h2><p>Copy a local MCP setup for Claude Code or Claude Desktop.</p><button class="button button-muted" data-action="connect-agent">Show agent config</button></section>
-        <section class="advanced-panel"><h2>AI caption drafts</h2><p>Optional. Captions are drafts for you to review; they are never posted automatically.</p>
+        <section class="advanced-panel"><h2>Connect an AI agent</h2><button class="button button-muted" data-action="connect-agent">Show agent config</button></section>
+        <section class="advanced-panel"><h2>AI caption drafts</h2>
           <form id="anthropic-key-form"><label for="anthropic-key">Anthropic API key</label><div class="inline-fields"><input id="anthropic-key" name="apiKey" class="field-control" type="password" autocomplete="off" placeholder="${state.advanced?.anthropicConfigured ? "Key saved on this computer" : "Enter your key"}"><button class="button button-small button-muted" type="submit">Save key</button>${state.advanced?.anthropicConfigured ? `<button class="button button-small button-plain" type="button" data-action="remove-anthropic-key">Remove key</button>` : ""}</div></form>
           <label class="toggle-setting"><input id="ai-captions-enabled" type="checkbox" ${state.advanced?.aiCaptionsEnabled ? "checked" : ""} ${state.advanced?.anthropicConfigured ? "" : "disabled"}><span>Enable “Write a caption for me”</span></label>
-          <p class="section-desc">Video frames are sent to Anthropic only when you request a draft. Spoken words are not transcribed automatically; you can provide a transcript for context.</p>
+          <p class="section-desc">Frames go to Anthropic only when you ask for a draft.</p>
         </section>
       </details>`;
     if (advancedWasOpen) {
@@ -384,11 +384,11 @@
   function openDialog(markup, wide = false) { dialog.classList.toggle("dialog-wide", wide); dialogContent.innerHTML = markup; dialog.showModal(); }
   function closeDialog() { if (dialog.open) dialog.close(); }
   function openTikTokSetup() {
-    openDialog(`<h2>Connect TikTok</h2><p class="dialog-intro">Add your TikTok developer app details once. Final Cog encrypts them on this computer.</p>
+    openDialog(`<h2>Connect TikTok</h2>
       <form id="tiktok-credentials-form"><div class="dialog-fields">
         <div class="form-field"><label for="tiktok-client-key">Client key</label><input class="field-control" id="tiktok-client-key" name="clientKey" autocomplete="off" required></div>
         <div class="form-field"><label for="tiktok-client-secret">Client secret</label><input class="field-control" id="tiktok-client-secret" name="clientSecret" type="password" autocomplete="new-password" required></div>
-      </div><p class="section-desc">Find both values in your TikTok developer app. They are never sent to the browser after saving.</p>
+      </div><p class="section-desc">From your TikTok developer app. Stored encrypted here.</p>
       <div class="dialog-actions"><button type="button" class="button button-small" data-action="close-dialog">Cancel</button><button type="submit" class="button button-accent">Save and continue</button></div></form>`);
   }
   function findQueue(id) { return state.queue.find(item => String(item.id) === String(id)); }
@@ -455,10 +455,10 @@
       setActive("settings");
       return;
     }
-    openDialog(`<h2>Write a caption</h2><p class="dialog-intro">Add spoken words for context, then review and edit the suggestions before saving.</p>
+    openDialog(`<h2>Write a caption</h2>
       <form id="draft-caption-form" data-id="${esc(mediaId)}"><div class="dialog-fields">
         <div class="form-field"><label for="transcript-input">Spoken words, if any</label><textarea class="field-control" id="transcript-input" name="transcript" rows="3" maxlength="4000" placeholder="Optional transcript"></textarea></div>
-        <p class="section-desc">A few video frames will be sent to Anthropic. Nothing is saved or scheduled until you review it.</p>
+        <p class="section-desc">A few frames go to Anthropic.</p>
       </div><div class="dialog-actions"><button type="button" class="button button-small" data-action="close-dialog">Cancel</button><button type="submit" class="button button-accent">Draft captions</button></div></form>`);
   }
   function confirmAction(message, callback) {
@@ -505,7 +505,7 @@
       else if (action === "connect-agent") {
         const result = await api("/api/agent/config");
         const configText = JSON.stringify(result.json, null, 2);
-        openDialog(`<h2>Connect an AI agent</h2><p class="dialog-intro">Add this entry to Claude Code or Claude Desktop. It connects to Final Cog on this computer.</p><textarea class="field-control agent-config" id="agent-config-text" rows="14" readonly></textarea><div class="dialog-actions"><button class="button button-small" data-action="close-dialog">Close</button><button class="button button-accent" data-action="copy-agent-config">Copy config</button></div>`);
+        openDialog(`<h2>Connect an AI agent</h2><textarea class="field-control agent-config" id="agent-config-text" rows="14" readonly></textarea><div class="dialog-actions"><button class="button button-small" data-action="close-dialog">Close</button><button class="button button-accent" data-action="copy-agent-config">Copy config</button></div>`);
         document.getElementById("agent-config-text").value = configText;
       }
       else if (action === "copy-agent-config") {
@@ -627,7 +627,7 @@
           const label = { tiktok: "TikTok", instagram: "Instagram Reels", youtube: "YouTube Shorts" }[platform] || platform;
           return `<div class="form-field"><label for="draft-${esc(platform)}">${label}</label><textarea class="field-control" id="draft-${esc(platform)}" data-caption data-platform="${esc(platform)}" rows="3">${esc(draft.caption)}</textarea><input class="field-control" data-hashtags data-platform="${esc(platform)}" value="${esc(draft.hashtags)}" aria-label="${label} hashtags"></div>`;
         }).join("");
-        openDialog(`<h2>Review your captions</h2><p class="dialog-intro">Edit anything you want. Nothing is saved until you save the video in your library.</p><form id="apply-caption-form" data-id="${esc(mediaId)}"><div class="dialog-fields">${fields}</div><div class="dialog-actions"><button type="button" class="button button-small" data-action="close-dialog">Cancel</button><button type="submit" class="button button-accent">Use these drafts</button></div></form>`);
+        openDialog(`<h2>Review your captions</h2><form id="apply-caption-form" data-id="${esc(mediaId)}"><div class="dialog-fields">${fields}</div><div class="dialog-actions"><button type="button" class="button button-small" data-action="close-dialog">Cancel</button><button type="submit" class="button button-accent">Use these drafts</button></div></form>`);
       } catch (error) { showToast(error.message, true); }
       return;
     }
